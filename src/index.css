@@ -1,0 +1,35 @@
+@import "Styles/fonts.css";
+@import "Styles/scaling.css";
+@import "Styles/animations.css";
+@import "Styles/themes.css";
+@import "Styles/mainUiElements.css";
+@import "Styles/video-js.css";
+body {
+  all: unset;
+  font-family: Inter-Light;
+  color: #fff;
+  font-size: 14px;
+  background-color: transparent;
+  min-width: 400px;
+  -webkit-user-drag: none;
+}
+
+.main-app {
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--main-background-color);
+  box-sizing: border-box;
+  border-radius: var(--window-border-radius, 10px);
+  border: var(--window-border-thikness) solid var(--window-border-color);
+  padding: 1px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-user-drag: none;
+}
+
+::selection {
+  background: var(--highlight-background-color);
+  color: var(--highlight-text-color);
+}
+

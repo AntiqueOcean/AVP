@@ -1,0 +1,9 @@
+@keyframes appear {
+    0% {
+      display: none;
+    }
+  
+    100% {
+      display: block;
+    }
+  }

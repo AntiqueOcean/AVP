@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html class="theme-dark font-size-medium base-theme-essential">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AVP</title>
+    <script type="text/javascript" src="config.json"></script>
+    <link rel="stylesheet" href="index.css">
+    <script src="Scripts/prefixfree.min.js" ></script>
+    <!-- <script src="index.js"></script> -->
+    <script src="Scripts/video-js.js"></script>
+
+    <script src="Scripts/tweaks.js" defer></script>
+
+  </head>
+  <body>
+    <section class="main-app">
+
+      <div class="top-bar">
+        <div class="upper">
+
+          <div class="app-title" onclick="addTempMenu(event, 'list-menu', 'info_menu', info_items)">
+            <div class="left">antique</div>
+            <div class="right">Video Player</div>
+            <div class="drop-down-button"></div>
+          </div>
+
+          <div class="title-bar">
+            <input type="checkbox" class="edit-button" id="editCheck"/>
+            <label for="editCheck"></label>
+            <form>
+              <input type="text" id="fname" name="fname" value="default_file_name.type">
+              <input type="button" value="file ↓"/>
+              <input type="button" value="go ↩"/>
+            </form>
+          </div>
+        
+          <div class="top-bar-buttons">
+            <button onclick="safeClose();" style="--image: url(svg/exit.svg); --color: var(--alt-color-red, red)"/>
+            <button onclick="windowMaximize();" style="--image: url(svg/maximize.svg); --color: var(--toolbar-text-color, white)"/>
+            <button style="--image: url(svg/minimize.svg); --color: var(--toolbar-text-color, white)"/>
+          </div>
+      
+      </div>
+
+      <div class="lower">
+        <button class="tab unselected" onclick="playPath()">file0</button>
+        <button class="tab unselected" >file1</button>
+        <button class="tab selected" >file2</button>
+        <button class="tab unselected" >file3</button>
+      </div>
+      </div>
+      <!-- end of top bar-->
+
+      <div class="main-player" ondblclick="setFullScreen()" onmousewheel="setVolumeFromMouseWheel(event);" oncontextmenu="addTempMenu(event, 'list-menu', 'player-items', playermenu_items)">
+        <div class="notifications" id="notifications">
+        </div>
+        <!--
+        <iframe src="https://www.youtube.com/embed/88sARuFu-tc?modestbranding=1&autoplay=0&autohide=1&showinfo=0&controls=0" frameborder="0">
+        </iframe>
+      -->
+
+        <video
+        id="video"
+        class="video-js"
+        preload="auto"
+        fluid="true"
+        data-setup="{'html5': {
+          nativeTextTracks: true
+      }}"
+        src="/mnt/C2D49BC8D49BBCDB/Archive/Series/Parks and recreation/Parks.and.Recreation.S03E15.720p.WEB-DL.x264.Pahe.FilmKio.mkv"
+      >
+      </video>
+
+        <!--
+        <div id="donationPopUp" class="donation">
+          <h1>support me!</h1>
+          <span>since there is quite literaly no way for me to make money out of my programming skills (iran's sanctions), your donations, even a small amount will help a lot.</span>
+          <button style="--color: var(--alt-color-green)">i'll help</button>
+          <button style="--color: var(--alt-color-red)" onclick="document.getElementById('donationPopUp').remove();">close</button>
+        </div>
+      -->
+      </div>
+
+      <div class="bottom-bar" >
+        <div class="timer-bar">
+          <form onsubmit="setNewTime(convertToSeconds(this.firstChild.value));">
+            <input class="left" type="text" id="timeStampInput" name="timeStampInput" value="00:13:54"/>
+            <input type="button" value="" hidden/>
+          </form>
+          <div class="middle" id="timerBarMiddle" onmousedown="updateBar();" onmousemove="updateTimeStamp(event);">
+            <div class="bar" id="timerBarMiddleBar"></div>
+            <div class="stamp" id="timeStamp">13:20:10</div>
+          </div>
+          <div class="right" id="timerBarRight">00:45:32</div>
+
+        </div>
+        <div class="rest">
+
+          <div class="left">
+            <button id="previousButton" style="--image: url(svg/subtitle.svg);"></button>
+            <button id="themesButton" style="--image: url(svg/mode.svg);" onclick="this.blur(); addTempMenu(event, 'list-menu', 'themes_menu', theme_items);"></button>
+            <button id="previousButton" style="--image: url(svg/previous.svg);"></button>
+          </div>
+
+          <div class="middle">
+            <button id="previousButton" tabindex="-1" style="--image: url(svg/previous.svg); width: calc(var(--font-tiny) * 2.1); height: calc(var(--font-tiny) * 1.8);"></button>
+            <button id="backwardButton" tabindex="-1" style="--image: url(svg/backward.svg); width: calc(var(--font-tiny) * 2.7); height: calc(var(--font-tiny) * 1.8);" onclick="this.blur(); backwardSeconds();"></button>
+            <button id="playButton" tabindex="-1" style="--image: url(svg/play.svg); width: calc(var(--font-tiny) * 2.6); height: calc(var(--font-tiny) * 2.6);" onclick="this.blur(); switchPlayPause();"></button>
+            <button id="forwardButton" tabindex="-1" style="--image: url(svg/forward.svg); width: calc(var(--font-tiny) * 2.7); height: calc(var(--font-tiny) * 1.8);" onclick="this.blur(); forwardSeconds();">
+            <!-- <div class="list-menu">
+              <div style="--tag:'  '" onclick="">2x</div>
+            </div> -->
+            </button>
+            <button id="nextButton" style="--image: url(svg/next.svg); width: calc(var(--font-tiny) * 2.1); height: calc(var(--font-tiny) * 1.8);"></button>
+          </div>
+
+          <div class="right">
+
+            <div class="audio-section" id="volumeController" onmousewheel="setVolumeFromMouseWheel(event);" oncontextmenu="addTempMenu(event, 'list-menu', 'volume_menu', volume_items)">
+              <button id="muteButton" onclick="toggleMute();" style="--image: url(svg/audioOn.svg)"></button>
+              <div id="volumeBarBg" class="audio-control" onclick="setVolumeFromBar(event)">
+                <div id="volumeBar" class="bar"></div>
+              </div>
+              <iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
+                <form onsubmit="setVolumeFromInput();" target="dummyframe">
+                  <input name="volumeNumberInput" type="number" maxlength="3" max="100" id="volumeNumberInput" value="20"
+                  oninput="javascript:
+                  if (this.value.length > 2 && value != 100) this.value = this.value.slice(0, 2);
+                  ">
+                  <input type="submit" hidden/>
+                </form>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="currentTempMenu">
+
+      </div>
+    </section>
+  </body>
+</html>

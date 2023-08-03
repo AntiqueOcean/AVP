@@ -1,0 +1,431 @@
+.theme-dark {
+    /* colors */
+    --main-background-color: #131313;
+    --toolbar-background-color: #424242;
+    --titlebar-background-color: #131313;
+    --toolbar-button-color: #B4B4B4;
+    --toolbar-text-color: #fff;
+    --toolbar-border-color: #707070;
+    --titlebar-background-color: #131313;
+    --titlebar-text-color: #b4b4b4;
+    --titlebar-highlight-color: #fff;
+    --toolbar-tab-background-color1: #707070;
+    --toolbar-tab-background-color1-hover: #7c7c7c;
+    --toolbar-tab-background-color2: #272727;
+    --toolbar-tab-background-color2-hover: #0c0c0c;
+    --toolbar-tab-text-color1: #fff;
+    --toolbar-tab-text-color2: #b4b4b4;
+    --toolbar-tab-text-color2-hover: #e0e0e0;
+    --general-shadow-color: #000;
+    --general-shadow-color-half: rgba(0, 0, 0, 0.5);
+    --general-shadow-color-quarter: rgba(0, 0, 0, 0.25);
+    --general-highlight-color: #fff;
+    --general-highlight-color-half: rgba(255, 255, 255, 0.5);
+    --general-highlight-color-quarter: rgba(255, 255, 255, 0.25);
+    --bottombar-bg1: #727272;
+    --bottombar-bg2: #323232;
+    --bottombar-bg3: #131313;
+    --bottombar-timer-bg1: #8d8d8d;
+    --bottombar-timer-bg2: #434343;
+    --bottombar-accent1: /*#9956AA;*/ #76c465;
+    --bottombar-accent2: /*#C677DA;*/ #398825;
+    --bottombar-text-color1: #fff;
+    --bottombar-text-color2: #fff;
+    --highlight-background-color: #b4b4b4;
+    --highlight-text-color: #000;
+    --play-buttons-color1: #ECECEC;
+    --play-buttons-color1-hover: #fff;
+    --play-buttons-color2: #a8a8a8;
+    --play-buttons-color2-hover: #d6d6d6;
+    --menu1-color1: #3c3c3c;
+    --menu1-color2: #626262;
+    --menu1-color3: #fff;
+    --menu1-color4: #4e4e4e;
+
+    --notification-bg-color: rgba(0, 0, 0, 0.5);
+    --notification-border-color: rgba(255, 255, 255, 0.50);
+    --notification-text-color: #e6e6e6;
+
+    /* alternative colors */
+    --alt-color-red: #f55151;
+    --alt-color-green: #80f264;
+
+    /* font size */
+    --toolbar-font-size: var(--font-small);
+
+    /* window */
+    --window-border-radius: 0px;
+    --toolbar-thikness: auto;
+    --window-border-color: transparent;
+    --window-border-thikness: 0px;
+
+    /* other */
+    --general-shadow-intensity: 100%;
+    --general-border-radius: 10px;
+    --timer-max-thikness: 12px;
+    --bottombar-lower-thikness: calc(var(--font-small) + var(--font-small) + var(--font-tiny) + var(--font-huge) + var(--font-huge));
+    --bottombar-bg-pattern: repeating-radial-gradient( circle at 0 0, transparent 0, var(--bottombar-bg2)15px ), repeating-linear-gradient( var(--bottombar-bg2), var(--bottombar-bg3) );
+}
+
+.theme-blueberry {
+    /* colors */
+    --main-background-color: #202020;
+    --toolbar-background-color: #505050;
+    --titlebar-background-color: #202020;
+    --toolbar-button-color: #BBB;
+    --toolbar-text-color: #fff;
+    --toolbar-border-color: #808080;
+    --titlebar-background-color: #202020;
+    --titlebar-text-color: #BBB;
+    --titlebar-highlight-color: #fff;
+    --toolbar-tab-background-color1: #808080;
+    --toolbar-tab-background-color1-hover: #7c7c7c;
+    --toolbar-tab-background-color2: #353535;
+    --toolbar-tab-background-color2-hover: #1b1b1b;
+    --toolbar-tab-text-color1: #fff;
+    --toolbar-tab-text-color2: #bbb;
+    --toolbar-tab-text-color2-hover: #eaeaea;
+    --general-shadow-color: #000;
+    --general-shadow-color-half: rgba(0, 0, 0, 0.5);
+    --general-shadow-color-quarter: rgba(0, 0, 0, 0.25);
+    --general-highlight-color: #fff;
+    --general-highlight-color-half: rgba(255, 255, 255, 0.5);
+    --general-highlight-color-quarter: rgba(255, 255, 255, 0.25);
+    --bottombar-bg1: #707070;
+    --bottombar-bg2: #003674;
+    --bottombar-bg3: #101010;
+    --bottombar-timer-bg1: #959595;
+    --bottombar-timer-bg2: #505050;
+    --bottombar-accent1: /*#9956AA;*/ #029df7;
+    --bottombar-accent2: /*#C677DA;*/ #0362aa;
+    --bottombar-text-color1: #fff;
+    --bottombar-text-color2: #fff;
+    --highlight-background-color: #b4b4b4;
+    --highlight-text-color: #000;
+    --play-buttons-color1: #ECECEC;
+    --play-buttons-color1-hover: #fff;
+    --play-buttons-color2: #a8a8a8;
+    --play-buttons-color2-hover: #d6d6d6;
+    --menu1-color1: #3c3c3c;
+    --menu1-color2: #626262;
+    --menu1-color3: #fff;
+    --menu1-color4: #4e4e4e;
+
+    --notification-bg-color: #0362aaaa;
+    --notification-border-color: #029df7;
+    --notification-text-color: #fff;
+
+    /* alternative colors */
+    --alt-color-red: #f55151;
+    --alt-color-green: #80f264;
+
+    /* font size */
+    --toolbar-font-size: var(--font-small);
+
+    /* window */
+    --window-border-radius: 0px;
+    --toolbar-thikness: auto;
+    --window-border-color: transparent;
+    --window-border-thikness: 0px;
+
+    /* other */
+    --general-shadow-intensity: 100%;
+    --general-border-radius: 10px;
+    --timer-max-thikness: 12px;
+    --bottombar-lower-thikness: calc(var(--font-small) + var(--font-small) + var(--font-tiny) + var(--font-huge) + var(--font-huge));
+    --bottombar-bg-pattern: repeating-radial-gradient( circle at 0 0, transparent 0, var(--bottombar-bg2)20px ), repeating-linear-gradient( var(--bottombar-bg2), var(--bottombar-bg3) );
+}
+.theme-light {
+    /* colors */
+    --main-background-color: #505050;
+    --toolbar-background-color: #e4e4e4;
+    --toolbar-button-color: #4b4b4b;
+    --toolbar-text-color: #000;
+    --toolbar-border-color: #8f8f8f;
+    --titlebar-background-color: #fbfbfb;
+    --titlebar-text-color: #5f5f5f;
+    --titlebar-highlight-color: #000;
+    --toolbar-tab-background-color1: #eeeeee;
+    --toolbar-tab-background-color1-hover: #ffffff;
+    --toolbar-tab-background-color2: #bebebe;
+    --toolbar-tab-background-color2-hover: #cfcfcf;
+    --toolbar-tab-text-color1: #000;
+    --toolbar-tab-text-color2: #4b4b4b;
+    --toolbar-tab-text-color2-hover: #202020;
+    --general-shadow-color: rgba(0, 0, 0, 0.333);
+    --general-shadow-color-half: rgba(0, 0, 0, 0.25);
+    --general-shadow-color-quarter: rgba(0, 0, 0, 0.2);
+    --general-highlight-color: #fff;
+    --general-highlight-color-half: rgba(255, 255, 255, 0.5);
+    --general-highlight-color-quarter: rgba(255, 255, 255, 0.25);
+    --bottombar-bg1: #e4e4e4;
+    --bottombar-bg2: #cdcdcd;
+    --bottombar-bg3: #ececec;
+    --bottombar-timer-bg1: #8d8d8d;
+    --bottombar-timer-bg2: #434343;
+    --bottombar-accent1: #9956AA;
+    --bottombar-accent2: #C677DA;
+    --bottombar-text-color1: #000;
+    --bottombar-text-color2: #000;
+    --highlight-background-color: #4b4b4b;
+    --highlight-text-color: #fff;
+    --play-buttons-color1: #131313;
+    --play-buttons-color1-hover: #000;
+    --play-buttons-color2: #575757;
+    --play-buttons-color2-hover: #292929;
+    --menu1-color1: #d8d8d8;
+    --menu1-color2: #9d9d9d;
+    --menu1-color3: #000;
+    --menu1-color4: #b1b1b1;
+
+    --notification-bg-color: rgba(255, 255, 255, 0.75);
+    --notification-border-color: rgba(0, 0, 0, 0.5);
+    --notification-text-color: #121212;
+
+    /* alternative colors */
+    --alt-color-red: #a50000;
+    --alt-color-green: #238a09;
+
+    /* font size */
+    --toolbar-font-size: var(--font-small);
+
+    /* window */
+    --window-border-radius: 0px;
+    --toolbar-thikness: auto;
+    --window-border-color: transparent;
+    --window-border-thikness: 0px;
+
+    /* other */
+    --general-shadow-intensity: 100%;
+    --general-border-radius: 10px;
+    --timer-max-thikness: 12px;
+    --bottombar-lower-thikness: calc(var(--font-small) + var(--font-small) + var(--font-tiny) + var(--font-huge) + var(--font-huge));
+    --bottombar-bg-pattern: repeating-radial-gradient( circle at 100% 0, transparent 0, var(--bottombar-bg2)15px ), repeating-linear-gradient( var(--bottombar-bg2), var(--bottombar-bg3) );
+}
+
+.theme-darker {
+    /* colors */
+    --main-background-color: #000;
+    --toolbar-background-color: #222;
+    --titlebar-background-color: #000;
+    --toolbar-button-color: #a4a4a4;
+    --toolbar-text-color: #eee;
+    --toolbar-border-color: #808080;
+    --titlebar-background-color: #000;
+    --titlebar-text-color: #a4a4a4;
+    --titlebar-highlight-color: #eee;
+    --toolbar-tab-background-color1: #505050;
+    --toolbar-tab-background-color1-hover: #6b6b6b;
+    --toolbar-tab-background-color2: #101010;
+    --toolbar-tab-background-color2-hover: #000;
+    --toolbar-tab-text-color1: #fff;
+    --toolbar-tab-text-color2: #a4a4a4;
+    --toolbar-tab-text-color2-hover: #d0d0d0;
+    --general-shadow-color: #000;
+    --general-shadow-color-half: rgba(0, 0, 0, 0.75);
+    --general-shadow-color-quarter: rgba(0, 0, 0, 0.5);
+    --general-highlight-color: #eee;
+    --general-highlight-color-half: rgba(255, 255, 255, 0.5);
+    --general-highlight-color-quarter: rgba(255, 255, 255, 0.25);
+    --bottombar-bg1: #505050;
+    --bottombar-bg2: #222;
+    --bottombar-bg3: #000;
+    --bottombar-timer-bg1: #8c8c8c;
+    --bottombar-timer-bg2: #333;
+    --bottombar-accent1: /*#9956AA;*/ #659ec4;
+    --bottombar-accent2: /*#C677DA;*/ #256c88;
+    --bottombar-text-color1: #eee;
+    --bottombar-text-color2: #eee;
+    --highlight-background-color: #a4a4a4;
+    --highlight-text-color: #000;
+    --play-buttons-color1: #bcbcbc;
+    --play-buttons-color1-hover: #ddd;
+    --play-buttons-color2: #777;
+    --play-buttons-color2-hover: #b6b6b6;
+    --menu1-color1: #2b2b2b;
+    --menu1-color2: #404040;
+    --menu1-color3: #eee;
+    --menu1-color4: #121212;
+
+    --notification-bg-color: #000000be;
+    --notification-border-color: #686868;
+    --notification-text-color: #e4e4e4;
+
+    /* alternative colors */
+    --alt-color-red: #f55151;
+    --alt-color-green: #80f264;
+
+    /* font size */
+    --toolbar-font-size: var(--font-small);
+
+    /* window */
+    --window-border-radius: 0px;
+    --toolbar-thikness: auto;
+    --window-border-color: transparent;
+    --window-border-thikness: 0px;
+
+    /* other */
+    --general-shadow-intensity: 100%;
+    --general-border-radius: 10px;
+    --timer-max-thikness: 12px;
+    --bottombar-lower-thikness: calc(var(--font-small) + var(--font-small) + var(--font-tiny) + var(--font-huge) + var(--font-huge));
+    --bottombar-bg-pattern: repeating-radial-gradient( circle at 0 0, transparent 0, var(--bottombar-bg2)25px ), repeating-linear-gradient( var(--bottombar-bg2), var(--bottombar-bg3) );
+    
+    
+}
+
+.theme-cheese {
+    /* colors */
+    --main-background-color: #131313;
+    --toolbar-background-color: #533200;
+    --titlebar-background-color: #361d00;
+    --toolbar-button-color: #dd7d00;
+    --toolbar-text-color: #ffdab0;
+    --toolbar-border-color: #707070;
+    --titlebar-background-color: #131313;
+    --titlebar-text-color: #ca7300;
+    --titlebar-highlight-color: #ffdab0;
+    --toolbar-tab-background-color1: #8b4719;
+    --toolbar-tab-background-color1-hover: #cc5f17;
+    --toolbar-tab-background-color2: #272727;
+    --toolbar-tab-background-color2-hover: #0c0c0c;
+    --toolbar-tab-text-color1: #ffecd6;
+    --toolbar-tab-text-color2: #ca7300;
+    --toolbar-tab-text-color2-hover: #e0e0e0;
+    --general-shadow-color: #000;
+    --general-shadow-color-half: rgba(0, 0, 0, 0.5);
+    --general-shadow-color-quarter: rgba(0, 0, 0, 0.25);
+    --general-highlight-color: #ffdab0;
+    --general-highlight-color-half: rgba(255, 255, 255, 0.5);
+    --general-highlight-color-quarter: rgba(255, 255, 255, 0.25);
+    --bottombar-bg1: #d3b97e;
+    --bottombar-bg2: #904110;
+    --bottombar-bg3: #59322b;
+    --bottombar-timer-bg1: #5f4c32;
+    --bottombar-timer-bg2: #36321e;
+    --bottombar-accent1: /*#9956AA;*/ #f4d464;
+    --bottombar-accent2: /*#C677DA;*/ #f7a100;
+    --bottombar-text-color1: #000;
+    --bottombar-text-color2: #fff;
+    --highlight-background-color: #ca7300;
+    --highlight-text-color: #000;
+    --play-buttons-color1: #ECECEC;
+    --play-buttons-color1-hover: #ffdab0;
+    --play-buttons-color2: #a8a8a8;
+    --play-buttons-color2-hover: #d6d6d6;
+    --menu1-color1: #4b3820;
+    --menu1-color2: #69512c;
+    --menu1-color3: #ffead1;
+    --menu1-color4: #664232;
+
+    --notification-bg-color: #ca7300bb;
+    --notification-border-color: #ff8800;
+    --notification-text-color: #fff;
+
+    /* alternative colors */
+    --alt-color-red: #fcb19b;
+    --alt-color-green: #c7f264;
+
+    /* font size */
+    --toolbar-font-size: var(--font-medium);
+
+    /* window */
+    --window-border-radius: 0px;
+    --toolbar-thikness: auto;
+    --window-border-color: transparent;
+    --window-border-thikness: 0px;
+
+    /* other */
+    --general-shadow-intensity: 100%;
+    --general-border-radius: 10px;
+    --timer-max-thikness: 16px;
+    --bottombar-lower-thikness: calc(var(--font-small) + var(--font-small) + var(--font-tiny) + var(--font-huge) + var(--font-huge));
+    --bottombar-bg-pattern: repeating-linear-gradient(45deg, transparent 0, var(--bottombar-bg2) 50px), repeating-linear-gradient( var(--bottombar-bg2), var(--bottombar-bg3) );
+}
+
+.theme-tree {
+    /* colors */
+    --main-background-color: #bbd0d3;
+    --toolbar-background-color: #e4e4e4;
+    --toolbar-button-color: #4b4b4b;
+    --toolbar-text-color: #000;
+    --toolbar-border-color: #8f8f8f;
+    --titlebar-background-color: #fbfbfb;
+    --titlebar-text-color: #5f5f5f;
+    --titlebar-highlight-color: #000;
+    --toolbar-tab-background-color1: #eeeeee;
+    --toolbar-tab-background-color1-hover: #ffffff;
+    --toolbar-tab-background-color2: #bebebe;
+    --toolbar-tab-background-color2-hover: #cfcfcf;
+    --toolbar-tab-text-color1: #000;
+    --toolbar-tab-text-color2: #4b4b4b;
+    --toolbar-tab-text-color2-hover: #202020;
+    --general-shadow-color: rgba(0, 0, 0, 0.333);
+    --general-shadow-color-half: rgba(0, 0, 0, 0.25);
+    --general-shadow-color-quarter: rgba(0, 0, 0, 0.2);
+    --general-highlight-color: #fff;
+    --general-highlight-color-half: rgba(255, 255, 255, 0.5);
+    --general-highlight-color-quarter: rgba(255, 255, 255, 0.25);
+    --bottombar-bg1: #f5f5f5;
+    --bottombar-bg2: #5e3915;
+    --bottombar-bg3: #a1774e;
+    --bottombar-timer-bg1: #8d8d8d;
+    --bottombar-timer-bg2: #434343;
+    --bottombar-accent1: #7cd803;
+    --bottombar-accent2: #4aa50e;
+    --bottombar-text-color1: #000;
+    --bottombar-text-color2: #000;
+    --highlight-background-color: #4b4b4b;
+    --highlight-text-color: #fff;
+    --play-buttons-color1: #f5d6bc;
+    --play-buttons-color1-hover: #000;
+    --play-buttons-color2: #bea8a8;
+    --play-buttons-color2-hover: #292929;
+    --menu1-color1: #d8d8d8;
+    --menu1-color2: #9d9d9d;
+    --menu1-color3: #000;
+    --menu1-color4: #b1b1b1;
+
+    --notification-bg-color: #c3dfe2aa;
+    --notification-border-color: #a1774e;
+    --notification-text-color: #2e1b09;
+
+    /* alternative colors */
+    --alt-color-red: #a70000;
+    --alt-color-green: #1a8100;
+
+    /* font size */
+    --toolbar-font-size: var(--font-small);
+
+    /* window */
+    --window-border-radius: 0px;
+    --general-shadow-intensity: 100%;
+    --general-border-radius: 10px;
+    --timer-max-thikness: 12px;
+    --bottombar-lower-thikness: calc(var(--font-small) + var(--font-small) + var(--font-tiny) + var(--font-huge) + var(--font-huge));
+    --bottombar-bg-pattern: repeating-radial-gradient( circle at 0 0, transparent 0, var(--bottombar-bg2)45px ), repeating-linear-gradient( var(--bottombar-bg2), var(--bottombar-bg3) );
+}
+
+.base-theme-essential {
+    --colorbase1: #098099;
+    --colorbase2: #049113;
+    --colorbase3: #103115;
+    --colorbase4: #103122;
+    --colorbase5: #103052;
+    --colorbase6: #112113;
+    --colorbase7: #120101;
+    --colorbase8: #114057;
+    --colorbase9: #102053;
+    --colorbase10: #120100;
+    --colorbase11: #102100;
+    --colorbase12: #107115;
+    --colorbase13: #100104;
+    --colorbase14: #054050;
+    --colorbase15: #119048;
+    --colorbase16: #104106; 
+    --colorbase17: #104104;
+    --colorbase18: #056116;
+    --colorbase19: #055055;
+    --colorbase20: #121108;
+    --colorbase21: #050104;
+}

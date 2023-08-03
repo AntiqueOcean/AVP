@@ -1,0 +1,78 @@
+.font-size-small {
+    --font-tiny: 8px;
+    --font-small: 10px;
+    --font-medium: 12px;
+    --font-big: 14px;
+    --font-bigger: 16px;
+    --font-huge: 18px;
+}
+
+.font-size-medium {
+    --font-tiny: 10px;
+    --font-small: 12px;
+    --font-medium: 14px;
+    --font-big: 16px;
+    --font-bigger: 18px;
+    --font-huge: 20px;
+}
+
+.font-size-big {
+    --font-tiny: 12px;
+    --font-small: 14px;
+    --font-medium: 16px;
+    --font-big: 18px;
+    --font-bigger: 20px;
+    --font-huge: 22px;
+}
+
+.font-size-huge {
+    --font-tiny: 14px;
+    --font-small: 16px;
+    --font-medium: 18px;
+    --font-big: 20px;
+    --font-bigger: 22px;
+    --font-huge: 24px;
+}
+
+
+/* ----------------------------- */
+/* sacalings based on resolution */
+/* ----------------------------- */
+
+@media (max-width: 479px) {
+    .bottom-bar > .rest > .right > .audio-section > .audio-control {
+        display: none !important;
+    }
+    .top-bar > .upper > .app-title > .right {
+        display: none !important;
+    }
+}
+
+@media (min-width: 480px) {
+    .bottom-bar > .rest > .right > .audio-section > .audio-control {
+        display: flex;
+    }
+    .top-bar > .upper > .app-title > .right {
+        display: block;
+    }
+}
+
+@media (max-width: 599px) {
+    .bottom-bar > .rest > .right > .audio-section > form {
+        display: none !important;
+    }
+    .top-bar > .upper > .app-title > .left {
+        display: none !important;
+    }
+}
+
+@media (min-width: 600px) {
+    .bottom-bar > .rest > .right > .audio-section > form {
+        display: inline-block;
+    }
+    .top-bar > .upper > .app-title > .left {
+        display: block;
+    }
+}
+
+
