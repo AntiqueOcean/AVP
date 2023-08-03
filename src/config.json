@@ -1,11 +1,11 @@
 [{
-"p_type":"none",
-"p_server":"",
-"p_port":"",
-"theme":"dark",
+"proxy_type":"none",
+"proxy_server":"",
+"proxy_port":"",
+"theme":"cheese",
 "font":"medium",
-"tick_rate":50,
+"tick_rate":25,
 "forwarding_time":10,
-"volume":62},
+"volume":54},
 {
 }]

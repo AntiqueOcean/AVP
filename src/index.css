@@ -4,6 +4,11 @@
 @import "Styles/themes.css";
 @import "Styles/mainUiElements.css";
 @import "Styles/video-js.css";
+
+:root {
+  user-select: none;
+}
+
 body {
   all: unset;
   font-family: Inter-Light;

@@ -2,11 +2,15 @@ const { ipcMain, dialog, app, BrowserWindow } = require('electron');
 const path = require('path');
 const { electron } = require('process');
 const fs = require('fs');
+//var configFile = new File("~")
 
-const config = JSON.parse(fs.readFileSync("src/config.json"));
+const _config = JSON.parse(fs.readFileSync("src/config.json"));
+const config = _config[0];
+
+
 
 var hasProxy = false;
-if (config.p_type !== "none")
+if (config.proxy_type != "none")
   hasProxy = true;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -37,10 +41,10 @@ app.on('ready', () => {
         }  
     })
     
-   // win.webContents.openDevTools();
+    win.webContents.openDevTools();
     win.loadFile(path.join(__dirname, 'index.html'));
     if (hasProxy) {
-      var proxyData = config.p_type + "://" + config.p_server + ":" + config.p_port;
+      var proxyData = config.proxy_type + "://" + config.proxy_server + ":" + config.proxy_port;
       win.webContents.session.setProxy({proxyRules:proxyData});
     }
 

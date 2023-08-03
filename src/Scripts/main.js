@@ -190,6 +190,7 @@ function n(input) {
 }
 
 function init() {
+
     setVolume(config.volume);
 } 
 
