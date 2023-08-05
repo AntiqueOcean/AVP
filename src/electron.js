@@ -27,11 +27,12 @@ app.on('ready', () => {
       minHeight: 340,
       fullscreen: false,
       titleBarStyle: 'hidden',
+      nodeIntegration: true,
       transparent:false,
       frame: false,
       hasShadow: true,
       show: false,
-      webPreferences:{nodeIntegration:true},
+
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
         devTools: true,
@@ -91,4 +92,3 @@ function windowMaximize() {
   console.log(electron);
   electron.BrowserWindow.maximize();
 }
-

@@ -18,6 +18,7 @@
     "electron-squirrel-startup": "^1.0.0",
     "jquery": "^3.7.0",
     "rpmbuild": "^0.0.23",
+    "update-electron-app": "^2.0.1",
     "videojs-youtube": "^3.0.1"
   },
   "devDependencies": {

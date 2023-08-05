@@ -1,6 +1,7 @@
 .theme-dark {
     /* colors */
     --main-background-color: #131313;
+    --differ-background-color: #1f1f1f;
     --toolbar-background-color: #424242;
     --titlebar-background-color: #131313;
     --toolbar-button-color: #B4B4B4;

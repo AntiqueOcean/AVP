@@ -2,7 +2,7 @@
 <html class="theme-dark font-size-medium base-theme-essential">
   <head>
     <meta charset="UTF-8" />
-    <title>AVP</title>
+    <title>Lump</title>
     <script type="text/javascript" src="config.json"></script>
     <link rel="stylesheet" href="index.css">
     <script src="Scripts/prefixfree.min.js" ></script>
@@ -13,24 +13,26 @@
 
   </head>
   <body>
-    <section class="main-app">
+    <section class="main-win" id="mainApp" ondrop="loadVideoFromDrop(event, this);">
 
       <div class="top-bar">
         <div class="upper">
 
           <div class="app-title" onclick="addTempMenu(event, 'list-menu', 'info_menu', info_items)">
-            <div class="left">antique</div>
-            <div class="right">Video Player</div>
+            <div class="left">legit ultimate</div>
+            <div class="right">Media Player</div>
             <div class="drop-down-button"></div>
           </div>
 
           <div class="title-bar">
             <input type="checkbox" class="edit-button" id="editCheck"/>
             <label for="editCheck"></label>
-            <form>
-              <input type="text" id="fname" name="fname" value="default_file_name.type">
-              <input type="button" value="file ↓"/>
-              <input type="button" value="go ↩"/>
+            <iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
+            <form target="dummyframe" onsubmit="loadVideoFromInput();">
+              <input id="fnameTitle" spellcheck="false" readonly></input>
+              <input type="text" spellcheck="false" id="fname" name="fname" value="default_file_name.type">
+              <input type="button" onsubmit="loadVideoFromPath();" value="file ↓"/>
+              <input type="submit" value="go ↩"/>
             </form>
           </div>
         
@@ -51,7 +53,7 @@
       </div>
       <!-- end of top bar-->
 
-      <div class="main-player" ondblclick="setFullScreen()" onmousewheel="setVolumeFromMouseWheel(event);" oncontextmenu="addTempMenu(event, 'list-menu', 'player-items', playermenu_items)">
+      <div class="main-player" id="mainPlayer" ondblclick="setFullScreen()" onmousewheel="setVolumeFromMouseWheel(event);" oncontextmenu="addTempMenu(event, 'list-menu', 'player-items', playermenu_items)">
         <div class="notifications" id="notifications">
         </div>
         <!--
@@ -67,7 +69,7 @@
         data-setup="{'html5': {
           nativeTextTracks: true
       }}"
-        src="/mnt/C2D49BC8D49BBCDB/Archive/Series/Parks and recreation/Parks.and.Recreation.S03E15.720p.WEB-DL.x264.Pahe.FilmKio.mkv"
+        src=""
       >
       </video>
 
@@ -83,15 +85,16 @@
 
       <div class="bottom-bar" >
         <div class="timer-bar">
-          <form onsubmit="setNewTime(convertToSeconds(this.firstChild.value));">
-            <input class="left" type="text" id="timeStampInput" name="timeStampInput" value="00:13:54"/>
+          <iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
+          <form onsubmit="setTimeFromInput()" target="dummyframe">
+            <input class="left" type="text" pattern="[0-9\:]*$" id="timeInput" name="timeInput" value="00:00:00"/>
             <input type="button" value="" hidden/>
           </form>
           <div class="middle" id="timerBarMiddle" onmousedown="updateBar();" onmousemove="updateTimeStamp(event);">
             <div class="bar" id="timerBarMiddleBar"></div>
-            <div class="stamp" id="timeStamp">13:20:10</div>
+            <div class="stamp" id="timeStamp">00:00:00</div>
           </div>
-          <div class="right" id="timerBarRight">00:45:32</div>
+          <div class="right" id="timerBarRight">00:00:00</div>
 
         </div>
         <div class="rest">

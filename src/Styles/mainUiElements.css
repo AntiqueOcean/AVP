@@ -99,7 +99,6 @@
 .top-bar > .upper > .title-bar {
     background-color: var(--titlebar-background-color);
     border-radius: 4px;
-    width: 100%;
     display: flex;
     gap: 4px;
     flex-wrap: nowrap;
@@ -160,14 +159,16 @@
     
 }
 
-.top-bar > .upper > .title-bar > .edit-button:checked ~ form > input:nth-of-type(1) {
+.top-bar > .upper > .title-bar > .edit-button:checked ~ form > input:nth-of-type(2) {
+    display: block;
     color: var(--titlebar-highlight-color);
 }
 
-.top-bar > .upper > .title-bar > .edit-button:checked ~ form > input:nth-of-type(2),
-.top-bar > .upper > .title-bar > .edit-button:checked ~ form > input:nth-of-type(3) {
+.top-bar > .upper > .title-bar > .edit-button:checked ~ form > input:nth-of-type(3),
+.top-bar > .upper > .title-bar > .edit-button:checked ~ form > input:nth-of-type(4) {
     display: block;
 }
+
 
 
 .top-bar > .upper > .title-bar > form {
@@ -178,6 +179,29 @@
 }
 
 .top-bar > .upper > .title-bar > form > input:nth-of-type(1) {
+    display: block;
+    color: var(--titlebar-text-color);
+    font-size: var(--font-medium);
+    flex: 1 1;
+    overflow: hidden;
+    outline: none;
+    border: none;
+    pointer-events: none;
+    user-select: none;
+    background-color: transparent;
+}
+
+.top-bar > .upper > .title-bar > form > input:nth-of-type(1)::selection {
+    background-color: transparent;
+    color: var(--titlebar-text-color);
+    text-decoration: none;
+}
+
+.top-bar > .upper > .title-bar > .edit-button:checked ~ form > input:nth-of-type(1) {
+    display: none;
+}
+
+.top-bar > .upper > .title-bar > form > input:nth-of-type(2) {
     background-color: transparent;
     outline: none;
     border: none;
@@ -185,10 +209,12 @@
     font-size: var(--font-medium);
     width: 100%;
     flex: 1 1;
+    user-select: none;
+    display: none;
 }
 
-.top-bar > .upper > .title-bar > form > input:nth-of-type(2),
-.top-bar > .upper > .title-bar > form > input:nth-of-type(3) {
+.top-bar > .upper > .title-bar > form > input:nth-of-type(3),
+.top-bar > .upper > .title-bar > form > input:nth-of-type(4) {
     border-radius: 2px;
     outline: none;
     border: none;
@@ -206,8 +232,8 @@
     display: none;
 }
 
-.top-bar > .upper > .title-bar > form > input:nth-of-type(2):hover,
-.top-bar > .upper > .title-bar > form > input:nth-of-type(3):hover {
+.top-bar > .upper > .title-bar > form > input:nth-of-type(3):hover,
+.top-bar > .upper > .title-bar > form > input:nth-of-type(4):hover {
     padding: 2px 6px;
     background-color: var(--titlebar-highlight-color);
 }
@@ -486,7 +512,7 @@
 }
 
 .bottom-bar > .timer-bar > .middle > .bar{
-    width:50%;
+    width:0%;
     height: 100%;
     border-radius: 6px;
     background-image: linear-gradient(to right, var(--bottombar-accent2) , var(--bottombar-accent1));

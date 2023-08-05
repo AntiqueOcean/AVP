@@ -7,6 +7,9 @@ const { dialog, BrowserWindow } = require('electron');
 const path = require('path');
 const { electron } = require('process');
 const fs = require('fs');
+const { time } = require("console");
+const { unique } = require("jquery");
+//const BrowserWindow = electron.remote.BrowserWindow;
 
 /* ------------- ----------- ------------- */
 /* ------------- [variables] ------------- */
@@ -15,9 +18,11 @@ const fs = require('fs');
 // loading set variables
 const _config = JSON.parse(fs.readFileSync("src/config.json"));
 const config = _config[0];
+const history = JSON.parse(fs.readFileSync("src/history.json"));
 
 // input variables
 var pausingControl = false;
+var inputingTime = false;
 
 // global ui variables
 var tickRate = config.tick_rate; //ms
@@ -30,6 +35,8 @@ var currentTime = 0;
 var playing = false;
 var timebarMouseX;
 var forwardingSeconds = config.forwarding_time;
+var currentPath = "none";
+
 
 //volume control variables
 var lastVolume = 25;
@@ -38,22 +45,27 @@ var lastVolume = 25;
 var notficationsArray = new Array();
 var lastNotficationId = 0;
 
+
+//windows
+var settingsWindow;
 /* ------------- ---------- ------------- */
 /* ------------- [Elements] ------------- */
 /* ------------- ---------- ------------- */
 
 // video control elements
+var mainPlayer = document.getElementById("mainPlayer");
 var video = document.getElementById("video");
 var timeStamp = document.getElementById("timeStamp"); 
-var timeStampInput = document.getElementById("timeStampInput");
+var timeInput = document.getElementById("timeInput");
 var timerBarMiddle = document.getElementById("timerBarMiddle"); 
 var timerBarMiddleBar = document.getElementById("timerBarMiddleBar");
 var timerBarRight = document.getElementById("timerBarRight");
 var backwardButton = document.getElementById("backwardButton");
 var playButton = document.getElementById("playButton");
 var forwardButton = document.getElementById("forwardButton");
-
-
+var filePathInput = document.getElementById("fname");
+var fileTitle = document.getElementById("fnameTitle");
+var editCheck = document.getElementById("editCheck");
 //volume control elements
 var volumeBar = document.getElementById("volumeBar");
 var volumeBarBg = document.getElementById("volumeBarBg");
@@ -124,8 +136,9 @@ var playermenu_items = `
         </div>
         <div style="--tag:'↗'" onclick="setFullscreen()">fullscreen</div>
     </div>
-
 </div>
+
+<div style="--tag:'*'" onclick="openSettings();">settings</div>
 `;
 
 var volume_items = `
@@ -170,6 +183,17 @@ window.addEventListener("focusout", function(e) {
     }
 })
 
+timeInput.addEventListener("focusin", () => {
+    inputingTime = true;
+});
+
+timeInput.addEventListener("focusout", () => {
+    inputingTime = false;
+});
+
+mainPlayer.addEventListener("dragover", function(event) {
+    event.preventDefault();
+});
 
 /* ------------- ----------- ------------- */
 /* ------------- [Functions] ------------- */
@@ -189,18 +213,60 @@ function n(input) {
     return _out;
 }
 
-function init() {
+function range(input, _min, _max) {
+    return Math.max(Math.min(input, _max), _min);
+}
 
+function init() {
     setVolume(config.volume);
+    if (config.open_last) {
+        loadVideo(config.last_path);
+    }
+
+    updateAll();
 } 
 
 function safeClose() {
     config.volume = Math.round(video.volume*100);
+    if (video.readyState === 4)
+        config.last_path = currentPath;
     updateConfigFile();
-    window
+    addCurrentToHistory();
+    updateHistoryFile();
     setInterval (() => {window.close();}, 250);
 }
 
+function openSettings() {
+    const _width = 580;
+    const _height = 460;
+    var _posX = document.body.getBoundingClientRect.width/2 - _width/2;
+    var _posY = document.body.getBoundingClientRect.height/2 - _height/2;
+    settingsWindow = window.open('settings.html', '_blank', `
+    width=${_width},
+    height=${_height},
+    left=${_posX},
+    top=${_posY},
+    frame=false,
+    resizable=true,
+    alwaysOnTop=true,
+    nodeIntegration=true`);
+}
+
+function loadVideoFromInput() {
+    if (fname.value != "none")
+        loadVideo(fname.value);
+    editCheck.checked = false;
+    updateUi();
+}
+
+function loadVideoFromDrop(event, target) {
+    event.preventDefault();
+    loadVideo(event.dataTransfer.files[0].path);
+}
+
+function updateVideoFilters() {
+    video.style.filter = `contrast(${config.contrast}%) blur(${config.blur}px) grayscale(${config.grayscale}%) hue-rotate(${config.hue}deg) invert(${config.invert}%) brightness(${config.brightness}%)`;
+}
 
 function closeTempMenu() {
     window.removeEventListener("click", closeTempMenu);
@@ -333,6 +399,26 @@ function updateConfigFile() {
     });
 }
 
+function updateHistoryFile() {
+    var _str = JSON.stringify(history);
+    for (var i = 0; i < _str.length; i++) {
+        if (_str[i] == ',' || _str[i] == '{') {
+            _str = _str.slice(0, i+1) + "\n" + _str.slice(i+1);
+            i++;
+        } else if (_str[i] == '}') {
+            _str = _str.slice(0, i) + "\n" + _str.slice(i);
+            i++;
+        }
+    }
+
+    fs.writeFile("src/history.json", _str, (error) => {
+        if(error) {
+            console.error(error);
+            throw error;
+        }
+    });
+}
+
 function setTheme(input, notify = true) {
     previousTheme = config.theme;
     var current = document.documentElement.getAttribute('class');
@@ -389,7 +475,10 @@ function calcSeconds(input) {
   
 function convertToSeconds(input) {
     var a = input.split(":");
-    return (+a[0]) * 60 * 60 + (+a[1]) * 60 + (+a[2]); 
+    if (a.length == 3)
+        return (+a[0]) * 60 * 60 + (+a[1]) * 60 + (+a[2]); 
+    else
+        return currentTime;
 }
   
 function updateNavigator() {
@@ -400,10 +489,17 @@ function updateNavigator() {
       });
 }
 
-function updateAll(){
+function updateUi() {
     setTheme(config.theme, false);
+    fileTitle.value = path.parse(currentPath).base;
+    filePathInput.value = currentPath;
+}
+
+function updateAll(){
+    updateUi();
     updateNavigator();
     updateTimerUi(true);
+    updateVideoFilters();
 }
 
 
@@ -421,7 +517,8 @@ function setNewTime(input) {
   }
   
   function updateTimerUi(input){
-    timeStampInput.value = calcSeconds(currentTime);
+    if (!inputingTime)
+        timeInput.value = calcSeconds(currentTime);
     timerBarMiddleBar.style.width = (currentTime/currentDuration*100)+'%';
     if (input)
       timerBarRight.innerHTML = calcSeconds(currentDuration);
@@ -464,6 +561,48 @@ function setNewTimeEnd(){
 
 /* ***** [Functions] ***** */
 /* Video Control Functions */
+//loadVideo("/home/mak/Downloads/Video/Its.Always.Sunny.in.Philadelphia.S02E08.480p.WEB-DL.PaHe.VinaDL.mkv");
+function loadVideo(input) {
+    if(video.readyState === 4) {
+        addCurrentToHistory();
+    }
+    video.setAttribute("src", input);
+    if (config.open_as_left)
+        setNewTime(getFromHistory(input));
+    currentPath = input;
+    if (!video.playing)
+        video.play();
+    addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, `onclick="removeNotificationById(this.id);"`);
+    updateAll();
+}
+
+function addCurrentToHistory() {
+    if (video.readyState === 4 && config.open_as_left) {
+        var _exists = false;
+        for (var i = 0; i < history.length; i++) {
+            if (currentPath == history[i].path) {
+                history[i].last = video.currentTime;
+                _exists = true;
+                break;
+            }
+        }
+        if (!_exists) {
+            history.unshift({path: currentPath, last: video.currentTime});
+        }
+    }
+    if (history.length > config.max_history_size)
+        history.length = config.max_history_size;
+    updateHistoryFile();
+}
+
+function getFromHistory(input) {
+    for (var i = 0; i < history.length; i++) {
+        if (input == history[i].path) {
+            return history[i].last;
+        }
+    }
+    return 0;
+}
 
 function switchPlayPause() {
     if (video != "undefined")
@@ -502,6 +641,11 @@ function playPath() {
       }).catch(err => {
         console.log(err)
       })
+}
+
+function setTimeFromInput() {
+    setNewTime(convertToSeconds(timeInput.value));
+    timeInput.blur();
 }
 
 function playUrl(intput) {
@@ -689,6 +833,101 @@ window.onkeydown = function(event) {
         }
         else if (code == "KeyP") {
             switchPlayPause();
+        }
+        else if (code == "KeyQ") {
+            config.contrast--;
+            config.contrast = range(config.contrast, 0, 300);
+            updateVideoFilters();
+            addNotification("contrast: " + config.contrast, 1000, true, "contrast");
+        }
+        else if (code == "KeyE") {
+            config.contrast++;
+            config.contrast = range(config.contrast, 0, 300);
+            updateVideoFilters();
+            addNotification("contrast: " + config.contrast, 1000, true, "contrast");
+        }
+        else if (code == "KeyW") {
+            config.contrast = 100;
+            updateVideoFilters();
+            addNotification("contrast: " + config.contrast, 1000, true, "contrast");
+        }
+        else if (code == "KeyA") {
+            config.grayscale--;
+            config.grayscale = range(config.grayscale, 0, 100);
+            updateVideoFilters();
+            addNotification("grayscale: " + config.grayscale, 1000, true, "grayscale");
+        }
+        else if (code == "KeyD") {
+            config.grayscale++;
+            config.grayscale = range(config.grayscale, 0, 100);
+            updateVideoFilters();
+            addNotification("grayscale: " + config.grayscale, 1000, true, "grayscale");
+        }
+        else if (code == "KeyS") {
+            config.grayscale = 0;
+            updateVideoFilters();
+            addNotification("grayscale: " + config.grayscale, 1000, true, "grayscale");
+        }
+        else if (code == "KeyF") {
+            config.hue--;
+            config.hue = range(config.hue, -180, 180);
+            updateVideoFilters();
+            addNotification("hue: " + config.hue, 1000, true, "hue");
+        }
+        else if (code == "KeyH") {
+            config.hue++;
+            config.hue = range(config.hue, -180, 180);
+            updateVideoFilters();
+            addNotification("hue: " + config.hue, 1000, true, "hue");
+        }
+        else if (code == "KeyG") {
+            config.hue = 0;
+            updateVideoFilters();
+            addNotification("hue: " + config.hue, 1000, true, "hue");
+        }
+        else if (code == "KeyV") {
+            config.blur--;
+            config.blur = range(config.blur, 0, 40);
+            updateVideoFilters();
+            addNotification("blur: " + config.blur, 1000, true, "blur");
+        }
+        else if (code == "KeyN") {
+            config.blur++;
+            config.blur = range(config.blur, 0, 40);
+            updateVideoFilters();
+            addNotification("blur: " + config.blur, 1000, true, "blur");
+        }
+        else if (code == "KeyB") {
+            config.blur = 0;
+            updateVideoFilters();
+            addNotification("blur: " + config.blur, 1000, true, "blur");
+        }
+        else if (code == "KeyZ") {
+            config.brightness--;
+            config.brightness = range(config.brightness, 0, 400);
+            updateVideoFilters();
+            addNotification("brightness: " + config.brightness, 1000, true, "brightness");
+        }
+        else if (code == "KeyC") {
+            config.brightness++;
+            config.brightness = range(config.brightness, 0, 400);
+            updateVideoFilters();
+            addNotification("brightness: " + config.brightness, 1000, true, "brightness");
+        }
+        else if (code == "KeyX") {
+            config.brightness = 100;
+            updateVideoFilters();
+            addNotification("brightness: " + config.brightness, 1000, true, "brightness");
+        }
+        else if (code == "KeyI") {
+            if(config.invert == 100)
+            {
+                config.invert = 0;
+            }
+            else
+                config.invert = 100;
+            updateVideoFilters();
+            addNotification("invert", 1000, true, "invert");
         }
     }
 }

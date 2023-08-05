@@ -3,6 +3,7 @@
 @import "Styles/animations.css";
 @import "Styles/themes.css";
 @import "Styles/mainUiElements.css";
+@import "Styles/secondaryUiElements.css";
 @import "Styles/video-js.css";
 
 :root {
@@ -19,7 +20,7 @@ body {
   -webkit-user-drag: none;
 }
 
-.main-app {
+.main-win {
   width: 100vw;
   height: 100vh;
   background-color: var(--main-background-color);
@@ -32,6 +33,8 @@ body {
   overflow: hidden;
   -webkit-user-drag: none;
 }
+
+
 
 ::selection {
   background: var(--highlight-background-color);

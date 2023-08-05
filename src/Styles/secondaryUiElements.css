@@ -1,0 +1,108 @@
+.settings {
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--main-background-color, blue);
+    box-sizing: border-box;
+    border: 2px solid var(--toolbar-background-color);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+    font-family: Inter;
+    -webkit-app-region: drag;
+}
+
+.settings *{
+    font-family: Inter;
+}
+
+.settings > .title-bar {
+    background-color: var(--toolbar-background-color);
+    width: 100%;
+    padding: 6px 12px;
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+    border-radius: var(--window-border-radius) var(--window-border-radius) 0 0;
+    -webkit-app-region: drag;
+    z-index: 2;
+}
+
+.settings > .content {
+    display: flex;
+    width: 100%;
+    flex: 1 1;
+    flex-direction: row;
+    gap: 4px;
+    padding: 4px;
+    box-sizing: border-box;
+}
+
+.settings > .content > .left {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    max-width: 200px;
+    width: auto;
+    min-width: 120px;
+    gap: 4px;
+    align-self: stretch;
+}
+
+.settings > .content > .left > button{
+    width: auto;
+    height: auto;
+    padding: calc(var(--font-tiny) - 2px) var(--font-big) calc(var(--font-tiny) - 2px) calc(var(--font-big) / 4 * 3);
+    font-size: var(--font-medium);
+    border: none;
+    outline: none;
+    background-color: var(--toolbar-background-color);
+    color: var(--toolbar-button-color);
+    border-radius: calc(var(--font-tiny) / 3);
+    text-align: left;
+    transition-duration: 0.1s;
+    border-left: calc(var(--font-big) / 4) solid var(--toolbar-background-color);
+    -webkit-app-region: no-drag;
+}
+
+.settings > .content > .left > button:hover {
+    color: var(--toolbar-text-color);
+    cursor: pointer;
+    border-left-color: var(--toolbar-button-color);
+}
+
+.settings > .content > .right{
+    width: 100%;
+    flex: 1 1;
+    align-self: stretch;
+    background-color: var(--differ-background-color);
+    border-radius: calc(var(--font-tiny) / 3);
+}
+
+.settings > .lower {
+    display: flex;
+    width: 100%;
+    gap: 4px;
+    flex-direction: row;
+    padding: 4px;
+    box-sizing: border-box;
+    justify-content: flex-end;
+
+
+}
+
+.settings > .lower > button {
+    width: auto;
+    height: auto;
+    padding: calc(var(--font-small) / 2) var(--font-small);
+    font-size: var(--font-medium);
+    background-color: var(--bg-color, var(--toolbar-background-color));
+    color: var(--text-color, var(--toolbar-button-color));
+    border-radius: calc(var(--font-tiny) / 3);
+    border: none;
+    outline: none;
+    -webkit-app-region: no-drag;
+}
