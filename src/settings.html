@@ -10,28 +10,31 @@
 </head>
 <body>
     <section class="settings">
-        <div class="title-bar">
-            Settings
-        </div>
-        <div class="content">
-            <div class="left">
-                <button>Appearance</button>
-                <button>Video</button>
-                <button>Audio</button>
-                <button>Subtitle</button>
-                <button>Input</button>
-                <button>Cache</button>
-                <button>Proxy</button>
-                <button style="margin-top: auto;">About</button>
+        <div id="settingsTitlebar" class="title-bar">Settings</div>
+        <div class="window">
+            <div class="upper">
+                <div class="left">
+                    <button>Appearance</button>
+                    <button>Video</button>
+                    <button>Audio</button>
+                    <button>Subtitle</button>
+                    <button onclick="setSettingsContent('input');">Input</button>
+                    <button>Cache</button>
+                    <button>Proxy</button>
+                    <hr style="width: 100%; border-color: var(--toolbar-background-color); margin: 0; margin-top: auto;"/>
+                    <button onclick="alert('info');">about</button>
+                </div>
+                <div class="right">
+                    <div id="settingsContent"  class="content">
+
+                    </div>
+                </div>
             </div>
-            <div class="right">
+            <div class="lower">
+                <button onclick="window.close()">close</button>
+                <button onclick="window.close()">apply</button>
             </div>
         </div>
-        <div class="lower">
-            <button onclick="window.close()">close</button>
-            <button onclick="window.close()">apply</button>
-        </div>
-    </div>
     </section>
 </body>
 </html>

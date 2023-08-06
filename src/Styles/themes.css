@@ -47,6 +47,20 @@
     --notification-border-color: rgba(255, 255, 255, 0.50);
     --notification-text-color: #e6e6e6;
 
+    --item-upper-background-color: #3a3a3a;
+    --item-upper-background-differ-color: #1f1f1f;
+    --item-upper-text-color: #DFDFDF;
+    --item-upper-text-differ-color: #A8A8A8;
+    --item-upper-text-differ-color: #A0A0A0;
+    --item-lower-background-color: #2a2a2a;
+    --item-lower-background-differ-color: #1f1f1f;
+    --item-lower-text-color: #C8C8C8;
+    --item-lower-text-color2: #686868;
+    --item-lower-text-differ-color: #E1E1E1;
+    
+
+
+
     /* alternative colors */
     --alt-color-red: #f55151;
     --alt-color-green: #80f264;

@@ -1,0 +1,14 @@
+[{
+    "play":["Space", "KeyP"],
+    "forward":["ArrowRight"],
+    "backward":["ArrowLeft"],
+    "volumeUp":["ArrowUp"],
+    "volumeDown":["ArrowDown"],
+    "mute":["KeyM"],
+    "invert":["KeyI"],
+    "fullscreen":["Enter"],
+    "contrastUp":["KeyC"],
+    "contrastReset":["KeyX"],
+    "contrastDown":["KeyZ"]},
+{
+}]

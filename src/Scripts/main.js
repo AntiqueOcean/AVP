@@ -9,16 +9,17 @@ const { electron } = require('process');
 const fs = require('fs');
 const { time } = require("console");
 const { unique } = require("jquery");
+
 //const BrowserWindow = electron.remote.BrowserWindow;
 
 /* ------------- ----------- ------------- */
 /* ------------- [variables] ------------- */
 /* ------------- ----------- ------------- */
-
 // loading set variables
 const _config = JSON.parse(fs.readFileSync("src/config.json"));
 const config = _config[0];
 const history = JSON.parse(fs.readFileSync("src/history.json"));
+const key = JSON.parse(fs.readFileSync("src/input.json"))[0];
 
 // input variables
 var pausingControl = false;
@@ -237,17 +238,19 @@ function safeClose() {
 }
 
 function openSettings() {
-    const _width = 580;
-    const _height = 460;
-    var _posX = document.body.getBoundingClientRect.width/2 - _width/2;
-    var _posY = document.body.getBoundingClientRect.height/2 - _height/2;
+    const _width = 720;
+    const _height = 580;
+    var _posX = screen.width/2 - _width/2;
+    var _posY = screen.height/2 - _height/2;
     settingsWindow = window.open('settings.html', '_blank', `
     width=${_width},
     height=${_height},
+    minWidth=${_width},
+    minHeight=${_height},
     left=${_posX},
     top=${_posY},
     frame=false,
-    resizable=true,
+    resizable=false,
     alwaysOnTop=true,
     nodeIntegration=true`);
 }
@@ -534,7 +537,6 @@ function updateTimeStamp(event) {
 
 var tickInterval = setInterval(tick, tickRate);
 function tick() {
-    
     playing = !video.paused;
     if (playing)
         playButton.style.setProperty ("--image", "url(svg/pause.svg)");
@@ -814,39 +816,53 @@ function toggleSubtitle() {
 /* ***** [Functions + Events] ***** */
 /* *** Keyboard Input Functions *** */
 
+function isKey(input, _arr) {
+    for (var i = 0; i < _arr.length; i++) {
+        if (input == _arr[i])
+            return true;
+    }
+    return false;
+}
+
+isKey(0, key.play);
+
 window.onkeydown = function(event) {
     if (!pausingControl) {
         var code = event.code;
+        console.log(event.code);
         closeTempMenu();
-        if (code == "Space") {
+        if (isKey(code, key.play)) {
             switchPlayPause();
             closeTempMenu();
         }
-        else if (code == "ArrowRight") {
+        else if (isKey(code, key.forward)) {
             forwardSeconds();
         }
-        else if (code == "ArrowLeft") {
+        else if (isKey(code, key.backward)) {
             backwardSeconds();
         }
-        else if (code == "KeyM") {
+        else if (isKey(code, key.volumeUp)) {
+            setVolume(video.volume*100+2);
+        }
+        else if (isKey(code, key.volumeDown)) {
+            setVolume(video.volume*100-2);
+        }
+        else if (isKey(code, key.mute)) {
             toggleMute();
         }
-        else if (code == "KeyP") {
-            switchPlayPause();
-        }
-        else if (code == "KeyQ") {
+        else if (isKey(code, key.contrastDown)) {
             config.contrast--;
             config.contrast = range(config.contrast, 0, 300);
             updateVideoFilters();
             addNotification("contrast: " + config.contrast, 1000, true, "contrast");
         }
-        else if (code == "KeyE") {
+        else if (isKey(code, key.ContrastUp)) {
             config.contrast++;
             config.contrast = range(config.contrast, 0, 300);
             updateVideoFilters();
             addNotification("contrast: " + config.contrast, 1000, true, "contrast");
         }
-        else if (code == "KeyW") {
+        else if (isKey(code, key.contrastReset)) {
             config.contrast = 100;
             updateVideoFilters();
             addNotification("contrast: " + config.contrast, 1000, true, "contrast");
@@ -902,24 +918,24 @@ window.onkeydown = function(event) {
             updateVideoFilters();
             addNotification("blur: " + config.blur, 1000, true, "blur");
         }
-        else if (code == "KeyZ") {
+        else if (code == "") {
             config.brightness--;
             config.brightness = range(config.brightness, 0, 400);
             updateVideoFilters();
             addNotification("brightness: " + config.brightness, 1000, true, "brightness");
         }
-        else if (code == "KeyC") {
+        else if (code == "") {
             config.brightness++;
             config.brightness = range(config.brightness, 0, 400);
             updateVideoFilters();
             addNotification("brightness: " + config.brightness, 1000, true, "brightness");
         }
-        else if (code == "KeyX") {
+        else if (code == "") {
             config.brightness = 100;
             updateVideoFilters();
             addNotification("brightness: " + config.brightness, 1000, true, "brightness");
         }
-        else if (code == "KeyI") {
+        else if (isKey(code, key.invert)) {
             if(config.invert == 100)
             {
                 config.invert = 0;
@@ -971,16 +987,54 @@ backwardButton.onmousedown = function (event) {
     constantForwardingInterval = setInterval(function(){constantForwardingFunction(-1)}, tickRate); 
 }
 
-
 function pauseKeyControl(input = true) {
     pausingControl = input;
 }
-
-
-
 
 function setFullScreen() {
     const win = new BrowserWindow({ width: 800, height: 600 })
     var _window = electron.remote.getCurrentWindow();
     _window.setFullScreen(true);
   }
+
+
+
+/* ------------ ---------- ------------ */
+/* ------------ [Settings] ------------ */
+/* ------------ ---------- ------------ */
+
+
+function setSettingsContent(input) {
+    var settings_input = `
+        <div class="item">
+            <div class="upper" style="opacity:75%;">
+                <h1><small>Key Bindings:</small></h1>
+            </div>
+        </div>
+
+        <div class="item">
+            <div class="upper">
+                <h1>Play/Pause</h1>
+            </div>
+            <div class="lower">
+                Space </div>
+                </div>
+        `;
+
+    const settingsContent = document.getElementById("settingsContent");
+    const settingsTitlebar = document.getElementById("settingsTitlebar");
+    const settingsContentParent = settingsContent.parentElement;
+
+
+
+    setTimeout(() => {
+        const _height = settingsContentParent.getBoundingClientRect().height - 16 + 'px';
+        settingsContent.style.setProperty("--content-parent-height", _height);
+
+        if (input === "input") {
+            settingsContent.innerHTML = settings_input;
+            settingsTitlebar.innerHTML = "Settings [Input]";
+        }
+    }, 50);
+    
+}
