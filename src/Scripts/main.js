@@ -252,7 +252,15 @@ function openSettings() {
     frame=false,
     resizable=false,
     alwaysOnTop=true,
-    nodeIntegration=true`);
+    nodeIntegration=true,
+    webPreferences: {
+        devTools: true,
+        enableRemoteModule: true,
+        nodeIntegration: true,
+        contextIsolation: false
+        }
+    `
+    );
 }
 
 function loadVideoFromInput() {
@@ -824,8 +832,6 @@ function isKey(input, _arr) {
     return false;
 }
 
-isKey(0, key.play);
-
 window.onkeydown = function(event) {
     if (!pausingControl) {
         var code = event.code;
@@ -996,45 +1002,3 @@ function setFullScreen() {
     var _window = electron.remote.getCurrentWindow();
     _window.setFullScreen(true);
   }
-
-
-
-/* ------------ ---------- ------------ */
-/* ------------ [Settings] ------------ */
-/* ------------ ---------- ------------ */
-
-
-function setSettingsContent(input) {
-    var settings_input = `
-        <div class="item">
-            <div class="upper" style="opacity:75%;">
-                <h1><small>Key Bindings:</small></h1>
-            </div>
-        </div>
-
-        <div class="item">
-            <div class="upper">
-                <h1>Play/Pause</h1>
-            </div>
-            <div class="lower">
-                Space </div>
-                </div>
-        `;
-
-    const settingsContent = document.getElementById("settingsContent");
-    const settingsTitlebar = document.getElementById("settingsTitlebar");
-    const settingsContentParent = settingsContent.parentElement;
-
-
-
-    setTimeout(() => {
-        const _height = settingsContentParent.getBoundingClientRect().height - 16 + 'px';
-        settingsContent.style.setProperty("--content-parent-height", _height);
-
-        if (input === "input") {
-            settingsContent.innerHTML = settings_input;
-            settingsTitlebar.innerHTML = "Settings [Input]";
-        }
-    }, 50);
-    
-}

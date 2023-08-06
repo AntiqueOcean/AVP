@@ -111,6 +111,7 @@
     gap: var(--font-tiny);
     flex-direction: column;
     overflow-y: auto;
+    justify-items: flex-start;
 }
 
 .settings > .window > .upper > .right > .content::-webkit-scrollbar {
@@ -231,15 +232,46 @@
     background-color: var(--item-lower-background-color);
     padding: 8px;
     border-radius: 0 0 6px 6px;
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
 }
 
 .key-select::before {
-    content: "key: ";
-    font-size: var(--font-tiny);
+    content: "key: \A";
+    white-space: pre; /* or pre-wrap */
+    font-size: var(--font-small);
     color: var(--item-lower-text-color2);
 }
+
 .key-select {
     font-size: var(--font-medium);
     color: var(--item-lower-text-color);
-    
+    width: auto;
+    padding: 4px;
+    border-radius: 2px;
+    width: max-content;
+}
+
+.key-select:hover {
+    text-decoration: line-through;
+    cursor: pointer;
+}
+
+.add-key {
+    width: min-content;
+    cursor: pointer;
+    font-size: var(--font-big);
+    background-color: var(--item-upper-background-color);
+    color: var(--item-upper-text-color);
+    font-weight: 300px;
+    padding: 4px 8px;
+    align-self: center;
+    border-radius: 4px;
+    opacity: 75%;
+}
+
+.add-key:hover {
+    opacity: 100%;
+    text-decoration: underline;
 }
