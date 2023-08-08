@@ -1,21 +1,16 @@
-const { constants } = require("original-fs");
-const { dialog, BrowserWindow } = require('electron');
-const path = require('path');
-const { electron } = require('process');
-const fs = require('fs');
-const { time } = require("console");
-const { unique } = require("jquery");
 
-const key = JSON.parse(fs.readFileSync("src/input.json"))[0];
 /* ------------ ---------- ------------ */
 /* ------------ [Settings] ------------ */
 /* ------------ ---------- ------------ */
 
+
 function getKeysForActions() {
+    alert(key.play[0]);
     let _keys = document.getElementsByClassName("getKeys");
     for (var i = 0; i < _keys.length; i++) {
-        let _key = key[_keys[i].parentElement.getAttribute("name")];
-        alert(_key);
+
+        var _key = key.play;
+
         for (var p = 0; p < _key.length; p++) {
             var _code = `<div class="key-select">` + _key[p] +`</div>`
             _keys[i].parentElement.insertAdjacentHTML('afterbegin', _code);
@@ -43,7 +38,6 @@ var settings_input = `
 `;
 
 function setSettingsContent(input) {
-
 
     const settingsContent = document.getElementById("settingsContent");
     const settingsTitlebar = document.getElementById("settingsTitlebar");

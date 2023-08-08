@@ -454,6 +454,14 @@
     -webkit-user-drag: none;
 }
 
+.visibility-by-hover {
+    visibility: hidden;
+}
+
+.visibility-by-hover:hover {
+    visibility: visible;
+}
+
 .bottom-bar > .timer-bar{
     width: 100%;
     height: auto;

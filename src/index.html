@@ -8,14 +8,14 @@
     <script src="Scripts/prefixfree.min.js" ></script>
     <!-- <script src="index.js"></script> -->
     <script src="Scripts/video-js.js"></script>
-  
-    <script src="Scripts/main.js" defer></script>
+    <script src="Scripts/main.js" type="module" defer></script>
+
 
   </head>
   <body>
-    <section class="main-win" id="mainApp" ondrop="loadVideoFromDrop(event, this);">
+    <section class="main-win" id="mainWin" ondrop="loadVideoFromDrop(event, this);">
 
-      <div class="top-bar">
+      <div id="topBar" class="top-bar">
         <div class="upper">
 
           <div class="app-title" onclick="addTempMenu(event, 'list-menu', 'info_menu', info_items)">
@@ -37,15 +37,15 @@
           </div>
         
           <div class="top-bar-buttons">
-            <button onclick="safeClose();" style="--image: url(svg/exit.svg); --color: var(--alt-color-red, red)"/>
-            <button onclick="windowMaximize();" style="--image: url(svg/maximize.svg); --color: var(--toolbar-text-color, white)"/>
-            <button style="--image: url(svg/minimize.svg); --color: var(--toolbar-text-color, white)"/>
+            <button id="mainCloseButton" style="--image: url(svg/exit.svg); --color: var(--alt-color-red, red)"/>
+            <button id="maximizeButton" style="--image: url(svg/maximize.svg); --color: var(--toolbar-text-color, white)"/>
+            <button id="minimizeButton" style="--image: url(svg/minimize.svg); --color: var(--toolbar-text-color, white)"/>
           </div>
       
       </div>
 
       <div class="lower">
-        <button class="tab unselected" onclick="playPath()">file0</button>
+        <button class="tab unselected" >file0</button>
         <button class="tab unselected" >file1</button>
         <button class="tab selected" >file2</button>
         <button class="tab unselected" >file3</button>
@@ -53,7 +53,7 @@
       </div>
       <!-- end of top bar-->
 
-      <div class="main-player" id="mainPlayer" ondblclick="setFullScreen()" onmousewheel="setVolumeFromMouseWheel(event);" oncontextmenu="addTempMenu(event, 'list-menu', 'player-items', playermenu_items)">
+      <div class="main-player" id="mainPlayer">
         <div class="notifications" id="notifications">
         </div>
         <!--
@@ -83,14 +83,14 @@
       -->
       </div>
 
-      <div class="bottom-bar" >
+      <div id="bottomBar" class="bottom-bar" >
         <div class="timer-bar">
           <iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
-          <form onsubmit="setTimeFromInput()" target="dummyframe">
+          <form id="timeInputForm" target="dummyframe">
             <input class="left" type="text" pattern="[0-9\:]*$" id="timeInput" name="timeInput" value="00:00:00"/>
             <input type="button" value="" hidden/>
           </form>
-          <div class="middle" id="timerBarMiddle" onmousedown="updateBar();" onmousemove="updateTimeStamp(event);">
+          <div class="middle" id="timerBarMiddle">
             <div class="bar" id="timerBarMiddleBar"></div>
             <div class="stamp" id="timeStamp">00:00:00</div>
           </div>
@@ -101,15 +101,15 @@
 
           <div class="left">
             <button id="previousButton" style="--image: url(svg/subtitle.svg);"></button>
-            <button id="themesButton" style="--image: url(svg/mode.svg);" onclick="this.blur(); addTempMenu(event, 'list-menu', 'themes_menu', theme_items);"></button>
+            <button id="themesButton" style="--image: url(svg/mode.svg);"></button>
             <button id="previousButton" style="--image: url(svg/previous.svg);"></button>
           </div>
 
           <div class="middle">
             <button id="previousButton" tabindex="-1" style="--image: url(svg/previous.svg); width: calc(var(--font-tiny) * 2.1); height: calc(var(--font-tiny) * 1.8);"></button>
-            <button id="backwardButton" tabindex="-1" style="--image: url(svg/backward.svg); width: calc(var(--font-tiny) * 2.7); height: calc(var(--font-tiny) * 1.8);" onclick="this.blur(); backwardSeconds();"></button>
-            <button id="playButton" tabindex="-1" style="--image: url(svg/play.svg); width: calc(var(--font-tiny) * 2.6); height: calc(var(--font-tiny) * 2.6);" onclick="this.blur(); switchPlayPause();"></button>
-            <button id="forwardButton" tabindex="-1" style="--image: url(svg/forward.svg); width: calc(var(--font-tiny) * 2.7); height: calc(var(--font-tiny) * 1.8);" onclick="this.blur(); forwardSeconds();">
+            <button id="backwardButton" tabindex="-1" style="--image: url(svg/backward.svg); width: calc(var(--font-tiny) * 2.7); height: calc(var(--font-tiny) * 1.8);"></button>
+            <button id="playButton" tabindex="-1" style="--image: url(svg/play.svg); width: calc(var(--font-tiny) * 2.6); height: calc(var(--font-tiny) * 2.6);"></button>
+            <button id="forwardButton" tabindex="-1" style="--image: url(svg/forward.svg); width: calc(var(--font-tiny) * 2.7); height: calc(var(--font-tiny) * 1.8);">
             <!-- <div class="list-menu">
               <div style="--tag:'  '" onclick="">2x</div>
             </div> -->
@@ -119,13 +119,13 @@
 
           <div class="right">
 
-            <div class="audio-section" id="volumeController" onmousewheel="setVolumeFromMouseWheel(event);" oncontextmenu="addTempMenu(event, 'list-menu', 'volume_menu', volume_items)">
-              <button id="muteButton" onclick="toggleMute();" style="--image: url(svg/audioOn.svg)"></button>
-              <div id="volumeBarBg" class="audio-control" onclick="setVolumeFromBar(event)">
+            <div class="audio-section" id="volumeController">
+              <button id="muteButton" style="--image: url(svg/audioOn.svg)"></button>
+              <div id="volumeBarBg" class="audio-control">
                 <div id="volumeBar" class="bar"></div>
               </div>
               <iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
-                <form onsubmit="setVolumeFromInput();" target="dummyframe">
+                <form id="volumeNumberInputForm" target="dummyframe">
                   <input name="volumeNumberInput" type="number" maxlength="3" max="100" id="volumeNumberInput" value="20"
                   oninput="javascript:
                   if (this.value.length > 2 && value != 100) this.value = this.value.slice(0, 2);

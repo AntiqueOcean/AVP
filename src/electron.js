@@ -1,4 +1,5 @@
-const { ipcMain, dialog, app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, contextBridge,
+        ipcMain } = require('electron');
 const path = require('path');
 const { electron } = require('process');
 const fs = require('fs');
@@ -6,6 +7,15 @@ const fs = require('fs');
 
 const _config = JSON.parse(fs.readFileSync("src/config.json"));
 const config = _config[0];
+
+
+
+const CHANNEL_NAME = 'electron';
+const MESSAGE = 'pong';
+
+ipcMain.on(CHANNEL_NAME, (event, data) => {
+  event.returnValue = MESSAGE;
+});
 
 
 
@@ -17,6 +27,7 @@ if (config.proxy_type != "none")
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
+
 var win;
 app.on('ready', () => { 
   setTimeout(() => {
@@ -32,24 +43,43 @@ app.on('ready', () => {
       frame: false,
       hasShadow: true,
       show: false,
-
       webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
-        devTools: true,
         enableRemoteModule: true,
         nodeIntegration: true,
+        preload: path.join(__dirname, 'preload.js'),
         contextIsolation: false
         }  
     })
-    
-    win.webContents.openDevTools();
+    ipcMain.on("toggleMaximize", function(event) {
+      if(win.isMaximized()) {
+        win.unmaximize();
+      } else {
+        win.maximize();
+      }
+    });
+
+    ipcMain.on("toggleMinimize", function(event) {
+      if(win.isMinimized()) {
+        win.unminimize();
+      } else {
+        win.minimize();
+      }
+    });
+
+    ipcMain.on("toggleFullscreen", function(event) {
+      if(win.fullScreen) {
+        win.setFullScreen(false);
+      } else {
+        win.setFullScreen(true);
+      }
+    });
+
+    //win.webContents.openDevTools();
     win.loadFile(path.join(__dirname, 'index.html'));
     if (hasProxy) {
       var proxyData = config.proxy_type + "://" + config.proxy_server + ":" + config.proxy_port;
       win.webContents.session.setProxy({proxyRules:proxyData});
     }
-
-
 
     win.show();
 
@@ -57,7 +87,6 @@ app.on('ready', () => {
       //when the dom is ready
     });
   }, 100);
-
 
 
 });
@@ -79,8 +108,7 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
-
-
+  
 });
 
 

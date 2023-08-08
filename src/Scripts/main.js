@@ -1,16 +1,24 @@
 /* ------------- --------- ------------- */
 /* ------------- [Headers] ------------- */
 /* ------------- --------- ------------- */
+const { dialog, electron, remote,
+        contextBridge, ipcRenderer
+} = require('electron');
 
 const { constants } = require("original-fs");
-const { dialog, BrowserWindow } = require('electron');
-const path = require('path');
-const { electron } = require('process');
-const fs = require('fs');
-const { time } = require("console");
-const { unique } = require("jquery");
 
-//const BrowserWindow = electron.remote.BrowserWindow;
+const path = require('path');
+// const { electron } = require('process');
+const fs = require('fs');
+const { event } = require("jquery");
+
+
+
+const CHANNEL_NAME = 'electron';
+const MESSAGE = 'ping';
+  
+console.log(ipcRenderer.sendSync(CHANNEL_NAME, MESSAGE)); // send request and show response 
+
 
 /* ------------- ----------- ------------- */
 /* ------------- [variables] ------------- */
@@ -29,6 +37,9 @@ var inputingTime = false;
 var tickRate = config.tick_rate; //ms
 var isTempMenuOpen = false;
 var previousTheme;
+var lastTopBarHeight = 80;
+var lastBottomBarY = 9999;
+var cursoHideTimer = 500;
 
 // video control variables
 var currentDuration = 0;
@@ -67,6 +78,7 @@ var forwardButton = document.getElementById("forwardButton");
 var filePathInput = document.getElementById("fname");
 var fileTitle = document.getElementById("fnameTitle");
 var editCheck = document.getElementById("editCheck");
+
 //volume control elements
 var volumeBar = document.getElementById("volumeBar");
 var volumeBarBg = document.getElementById("volumeBarBg");
@@ -77,7 +89,9 @@ var muteButton = document.getElementById("muteButton");
 //other elements
 var tempMenuPlaceHolder = document.getElementById("currentTempMenu");
 var notifications = document.getElementById("notifications");
-
+var mainWin = document.getElementById("mainWin");
+const topBar = document.getElementById("topBar");
+const bottomBar = document.getElementById("bottomBar");
 
 /* ------------- ------------------- ------------- */
 /* ------------- [context menu data] ------------- */
@@ -196,6 +210,7 @@ mainPlayer.addEventListener("dragover", function(event) {
     event.preventDefault();
 });
 
+
 /* ------------- ----------- ------------- */
 /* ------------- [Functions] ------------- */
 /* ------------- ----------- ------------- */
@@ -237,11 +252,16 @@ function safeClose() {
     setInterval (() => {window.close();}, 250);
 }
 
+function toggleFullscreen(e){
+    ipcRenderer.send("toggleFullscreen");
+}
+
 function openSettings() {
     const _width = 720;
     const _height = 580;
     var _posX = screen.width/2 - _width/2;
     var _posY = screen.height/2 - _height/2;
+
     settingsWindow = window.open('settings.html', '_blank', `
     width=${_width},
     height=${_height},
@@ -252,12 +272,10 @@ function openSettings() {
     frame=false,
     resizable=false,
     alwaysOnTop=true,
-    nodeIntegration=true,
     webPreferences: {
-        devTools: true,
-        enableRemoteModule: true,
         nodeIntegration: true,
-        contextIsolation: false
+        contextIsolation: false,
+        enableRemoteModule: true
         }
     `
     );
@@ -518,7 +536,7 @@ function setNewTime(input) {
     let settingTime;
     if(typeof input === 'undefined') {
       var leftPos = timerBarMiddle.getBoundingClientRect().left + window.scrollX;
-      settingTime = ((this.timebarMouseX-leftPos) / timerBarMiddle.getBoundingClientRect().width) * (this.currentDuration);
+      settingTime = ((timebarMouseX-leftPos) / timerBarMiddle.getBoundingClientRect().width) * (currentDuration);
     }
     else {
       settingTime = input;
@@ -539,13 +557,19 @@ function updateTimeStamp(event) {
     timebarMouseX = event.clientX;
     var leftPos = timerBarMiddle.getBoundingClientRect().left + window.scrollX;
     timeStamp.style.left = (timebarMouseX-leftPos-(timeStamp.getBoundingClientRect().width / 2))+'px';
-    timeStamp.innerHTML = calcSeconds(((timebarMouseX-leftPos) / timerBarMiddle.getBoundingClientRect().width) * (this.currentDuration)) + ' [' + (Math.round(((((timebarMouseX-leftPos) / timerBarMiddle.getBoundingClientRect().width) * (this.currentDuration)/currentDuration*100)) * 10)/10).toFixed(1)+'%]'; 
+    timeStamp.innerHTML = calcSeconds(((timebarMouseX-leftPos) / timerBarMiddle.getBoundingClientRect().width) * (currentDuration)) + ' [' + (Math.round(((((timebarMouseX-leftPos) / timerBarMiddle.getBoundingClientRect().width) * (currentDuration)/currentDuration*100)) * 10)/10).toFixed(1)+'%]'; 
 }
 
 
 var tickInterval = setInterval(tick, tickRate);
 function tick() {
     playing = !video.paused;
+    console.log(mainWin.style.cursor);
+    if (cursoHideTimer <= 0 && mainWin.style.cursor != "none")
+        mainWin.style.cursor = "none";
+    else
+        cursoHideTimer -= tickRate;
+
     if (playing)
         playButton.style.setProperty ("--image", "url(svg/pause.svg)");
     else
@@ -684,7 +708,7 @@ function updateVolumeUi(){
 
 function setVolume(input) {
     volumeNumberInput.blur();
-    _input = Math.round(input);
+    var _input = Math.round(input);
     if (input > 100)
         _input = 100;
     else if (input < 0) 
@@ -713,9 +737,9 @@ function setVolumeFromBar(event) {
 }
 
 function setVolumeFromMouseWheel(event) {
-    _amount = 2;
-    _direction = -1;
-    _current = video.volume;
+    var _amount = 2;
+    var _direction = -1;
+    var _current = video.volume;
     if (event.deltaY < 0)
     _direction = 1;
     setVolume((_current * 100)+(_amount*_direction));
@@ -985,6 +1009,8 @@ function constantForwardingFunction(direction = 1) {
     }
 }
 
+
+
 forwardButton.onmousedown = function (event) {
     constantForwardingInterval = setInterval(function(){constantForwardingFunction(1)}, tickRate); 
 }
@@ -1002,3 +1028,259 @@ function setFullScreen() {
     var _window = electron.remote.getCurrentWindow();
     _window.setFullScreen(true);
   }
+
+  function addListener(_id, _action, _function, _pass = []) {
+    const _element = document.getElementById(_id);
+
+        var _code = "";
+        if(_pass.length == 0) {
+            _code = `_element.addEventListener(_action, _function);`;
+            eval(_code);
+        }
+        else {
+            _code = `_element.addEventListener(_action, function(_e = this) {_function(`;
+            for (var i = 0; i < _pass.length; i++) {
+                if (i != _pass.length-1)
+                    _code += `getArg(_e, _pass, ${i}),`;
+                else
+                    _code += `getArg(_e, _pass, ${i}))});`;
+            }
+        }
+        eval(_code);
+  }
+
+  function getArg(_event, _array, _index) {
+    if (_array[_index] == "!event") {
+        return _event;
+    }
+    else {
+        return _array[_index];
+    }
+  }
+
+
+  class listItem {
+    constructor(type, isMain, name, sign = "", input = "", func = null, children = [], id = "") {
+        this.name = name;
+        this.type = type;
+        this.sign = sign;
+        this.input = input;
+        this.func = func;
+        this.id = id;
+        this.children = children;
+        this.isParent = false;
+        if (children.length != 0) 
+            this.isParent = true;
+        this.isMain = isMain;
+    }
+};
+
+const themeMenuLabel00 = new listItem("label", false , "themes:");
+const themeMenuItem00 = new listItem("item", false, "dark [default]", "🌖", "click", function(){setTheme("dark");}, undefined, "setThemeDark");
+const themeMenuItem01 = new listItem("item", false, "darker", "⚫", "click", function(){setTheme("darker");}, undefined, "setThemeDarker");
+const themeMenuItem02 = new listItem("item", false, "light", "☀️", "click", function(){setTheme("light");}, undefined, "setThemeLight");
+const themeMenuLabel01 = new listItem("label", false , "other");
+const themeMenuItem03 = new listItem("small item", false, "", "🌳", "click", function(){setTheme("tree");}, undefined, "setThemeTree");
+const themeMenuItem04 = new listItem("small item", false, "", "🧀", "click", function(){setTheme("cheese");}, undefined, "setThemeCheese");
+const themeMenuItem05 = new listItem("small item", false, "", "🫐", "click", function(){setTheme("blueberry");}, undefined, "setThemeBlueberry");
+const themeMenuItems = [themeMenuLabel00, themeMenuItem00, themeMenuItem01, themeMenuItem02,
+                        themeMenuLabel01, themeMenuItem03, themeMenuItem04, themeMenuItem05];
+const themeMenuList = new listItem("item", true, "themes", "", "", undefined, themeMenuItems, "themeMenu");                        
+
+const volumeMenu00 = new listItem("label", false , "volume:");
+const volumeMenu01 = new listItem("item", false, "100", "%", "click", function(){setVolume(100)}, undefined, "setVolume100");
+const volumeMenu02 = new listItem("item", false, "75", "%", "click", function(){setVolume(75)}, undefined, "setVolume75");
+const volumeMenu03 = new listItem("item", false, "50", "%", "click", function(){setVolume(50)}, undefined, "setVolume50");
+const volumeMenu04 = new listItem("item", false, "25", "%", "click", function(){setVolume(25)}, undefined, "setVolume25");
+const volumeMenu05 = new listItem("item", false, "mute", "-", "click", toggleMute, undefined, "setVolumeMute");
+const volumeMenuItems = [volumeMenu00, volumeMenu01,
+                        volumeMenu02, volumeMenu03,
+                        volumeMenu04, volumeMenu05];   
+const volumeMenuList = new listItem("item", true, "volume", "", "", undefined, volumeMenuItems, "volumeMenu");
+
+
+const mainMenu00_00 = new listItem("item", false, "test00-00", "?", undefined, null, undefined, "testMenuItem00_00");
+const mainMenu00_01 = new listItem("item", false, "test00-01", "?", undefined, null, undefined, "testMenuItem00_01");
+const mainMenuItem00Items = [mainMenu00_00, mainMenu00_01];
+const mainMenuItem00 = new listItem("item", false, "themes", "🎨", "", undefined, themeMenuItems, "mainMenuThemes");
+const mainMenuItem01 = new listItem("item", false, "test01", "?", undefined, null, undefined, "testMenuItem01");
+const mainMenuItems = [mainMenuItem00, mainMenuItem01];
+const mainMenuList = new listItem("item", true, "main", "", "", undefined, mainMenuItems, "mainMenu");
+
+addListener("mainCloseButton", "click", function() {
+    safeClose();
+});
+
+addListener("maximizeButton", "click", function() {
+    ipcRenderer.send("toggleMaximize");
+});
+
+addListener("minimizeButton", "click", function() {
+    ipcRenderer.send("toggleMinimize");
+});
+
+function updateLastBarBounds(){
+    if (topBar.display != "none" && topBar.getBoundingClientRect().height != 0)
+        lastTopBarHeight = topBar.getBoundingClientRect().height;
+    if (bottomBar.display != "none" && bottomBar.getBoundingClientRect().y != 0)
+        lastBottomBarY = bottomBar.getBoundingClientRect().y;
+}
+
+addListener("mainWin", "mousemove", function(e){
+        mainWin.style.cursor = "unset";
+        cursoHideTimer = 500;
+        if( (e.clientY > lastTopBarHeight) &&
+            (e.clientY < lastBottomBarY)) {
+                topBar.style.display = "none" ;
+                bottomBar.style.display = "none" ;
+            }
+        else {
+            topBar.style.display = "flex";
+            bottomBar.style.display = "flex";
+        }
+        updateLastBarBounds();
+}, ["!event"]);
+
+addListener("backwardButton", "click", function() {
+    this.blur();
+    backwardSeconds();
+});
+
+addListener("playButton", "click", function() {
+    this.blur();
+    switchPlayPause();
+});
+
+addListener("forwardButton", "click", function() {
+    this.blur();
+    forwardSeconds();
+});
+
+addListener("timeInputForm", "submit", function() {
+    setTimeFromInput();
+});
+
+addListener("timerBarMiddle", "mousedown", function() {
+    updateBar();
+});
+
+addListener("timerBarMiddle", "mousemove", function(e) {
+    updateTimeStamp(e);
+}, ["!event"]);
+
+addListener("volumeController", "mousewheel", function(e) {
+    setVolumeFromMouseWheel(e);
+}, ["!event"]);
+
+addListener("volumeController", "contextmenu", function(e) {
+    createGeneratedListMenu(generateListMenu(e, volumeMenuList, "volumeMenuList"));
+}, ["!event"]);
+
+addListener("muteButton", "click", function() {
+    toggleMute();
+});
+
+addListener("volumeBarBg", "click", function(e) {
+    setVolumeFromBar(e)
+}, ["!event"]);
+
+addListener("volumeNumberInputForm", "submit", function() {
+    setVolumeFromInput();
+});
+
+addListener("mainPlayer", "mousewheel", function(e) {
+    setVolumeFromMouseWheel(e);
+}, ["!event"]);
+
+
+addListener("mainPlayer", "contextmenu", function(e) {
+    createGeneratedListMenu(generateListMenu(e, mainMenuList, "mainMenuList"));
+}, ["!event"]);
+
+addListener("mainPlayer", "dblclick", function(e) {
+    switchPlayPause();
+}, ["!event"]);
+
+addListener("mainPlayer", "mousedown", function(e) {
+    if (e.button == 1) {
+        toggleFullscreen(e);
+    }
+}, ["!event"]);
+
+addListener("themesButton", "click", function(e) {
+    e.srcElement.blur();
+    createGeneratedListMenu(generateListMenu(e, themeMenuList, "themeMenuList"));
+}, ["!event"]);
+
+
+function elementValidateById(_id, _func, _interval = 10) {
+    const _tempInterval = setInterval (function(){
+        const _elem = document.getElementById(_id);
+        if (_elem != null & _elem != "undefined"){
+        _func();
+        clearInterval(_tempInterval);
+        }
+    }, _interval);
+}
+
+
+function generateListMenu(_event, itemList, _id = "", isMain = true) {
+    var _items = [];
+    const _list = itemList.children;
+    var _result = "";
+    if (isMain)
+        _result = `<div class="list-menu" id="${_id}" style="--mouse-x: ${_event.clientX}px; --mouse-y: ${_event.clientY}px;">`;
+    else
+        _result = `<div class="list-menu child">`;
+
+    for(var i = 0; i < _list.length; i++) {
+        if (_list[i].type == "label") {
+            _items[i] = `<label>${_list[i].name}</label>`;
+        }
+        else if (_list[i].type == "item" || _list[i].type == "small item") {
+            var _class = "";
+            if (_list[i].type == "small item")
+                _class = `class="small"`;
+            if (_list[i].isParent)
+                _class = `class="parent"`;
+            var __id = "";
+            if (_list[i].id != "")
+                __id = `id="${_list[i].id}"`;
+            _items[i] = `<div ${__id} ${_class} style="--tag:'${_list[i].sign}'">${_list[i].name} `;
+            const _event_ = _event;
+            const listItem = _list[i];
+            if (_list[i].children.length != 0) {
+                _items[i] += generateListMenu(_event_, listItem, listItem.id + "_menu", false);
+
+            elementValidateById(listItem.id, () => {
+                addListener(listItem.id, "mouseover", setBoundingVariables(document.getElementById(listItem.id)));
+            });
+                    
+            }
+            if (_list[i].func != null) {
+                elementValidateById(listItem.id, () => {
+                    addListener(listItem.id, listItem.input, listItem.func);
+                });
+                
+            }
+            
+            _items[i] += `</div>`;
+        }
+    }
+
+    for (var i = 0; i < _items.length; i++) {
+        _result += _items[i];
+    }
+    _result += `</div>`;
+    return _result;
+}
+
+function createGeneratedListMenu(input) {
+    closeTempMenu();
+
+    document.getElementById("currentTempMenu").innerHTML = input;
+    setTimeout(() => {
+        window.addEventListener("click", closeTempMenu);
+        window.addEventListener("contextmenu", closeTempMenu);
+    }, 50);
+}
