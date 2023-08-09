@@ -3,12 +3,58 @@
  * Proprietary and confidential.
  */
 
+
 const { app, BrowserWindow, contextBridge,
         ipcMain } = require('electron');
 const path = require('path');
 const { electron } = require('process');
 const fs = require('fs');
 const { platform } = require('os');
+
+
+const configDefaultContent = `
+[{
+  "proxy_type":"none",
+  "proxy_server":"",
+  "proxy_port":"",
+  "theme":"dark",
+  "font":"medium",
+  "tick_rate":25,
+  "max_history_size":128,
+  "open_last":true,
+  "open_as_left":true,
+  "forwarding_time":10,
+  "volume":100,
+  "last_path":"",
+  "blur":0,
+  "contrast":100,
+  "grayscale":0,
+  "hue":-7,
+  "invert":0,
+  "brightness":100},
+  {
+  }]
+`;
+
+const inputDefaultContent = `
+[{
+  "play":["Space", "KeyP"],
+  "forward":["ArrowRight"],
+  "backward":["ArrowLeft"],
+  "volumeUp":["ArrowUp"],
+  "volumeDown":["ArrowDown"],
+  "mute":["KeyM"],
+  "fullscreen":["KeyF", "F11", "Enter"],
+  "quit":["Escape"],
+  "invert":["KeyI"],
+  "contrastUp":["KeyC"],
+  "contrastReset":["KeyX"],
+  "contrastDown":["KeyZ"]},
+{
+}]
+`;
+
+const historyDefaultContent = "[]";
 
 //const _config = JSON.parse(fs.readFileSync("src/config.json"));
 //const config = _config[0];
@@ -157,46 +203,3 @@ function windowMaximize() {
 }
 
 
-const configDefaultContent = `
-[{
-  "proxy_type":"none",
-  "proxy_server":"",
-  "proxy_port":"",
-  "theme":"dark",
-  "font":"medium",
-  "tick_rate":25,
-  "max_history_size":128,
-  "open_last":true,
-  "open_as_left":true,
-  "forwarding_time":10,
-  "volume":100,
-  "last_path":"",
-  "blur":0,
-  "contrast":100,
-  "grayscale":0,
-  "hue":-7,
-  "invert":0,
-  "brightness":100},
-  {
-  }]
-`;
-
-const inputDefaultContent = `
-[{
-  "play":["Space", "KeyP"],
-  "forward":["ArrowRight"],
-  "backward":["ArrowLeft"],
-  "volumeUp":["ArrowUp"],
-  "volumeDown":["ArrowDown"],
-  "mute":["KeyM"],
-  "fullscreen":["KeyF", "F11", "Enter"],
-  "quit":["Escape"],
-  "invert":["KeyI"],
-  "contrastUp":["KeyC"],
-  "contrastReset":["KeyX"],
-  "contrastDown":["KeyZ"]},
-{
-}]
-`;
-
-const historyDefaultContent = "[]";

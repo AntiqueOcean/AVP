@@ -2,12 +2,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
  */
-
+console.log(213);
 
 /* ------------ ---------- ------------ */
 /* ------------ [Settings] ------------ */
 /* ------------ ---------- ------------ */
+//import { config } from './main.js';
 
+import * as basic from './basics.js';
+import * as listen from './listener.js';
+import * as menu from './menus.js';
 
 function getKeysForActions() {
     alert(key.play[0]);
@@ -41,6 +45,10 @@ var settings_input = `
     </div>
 </div>
 `;
+
+listen.addListener("inputButton", "click", function(){
+    setSettingsContent("input");
+});
 
 function setSettingsContent(input) {
 

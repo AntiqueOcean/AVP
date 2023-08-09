@@ -8,10 +8,9 @@
 <head>
     <meta charset="UTF-8" />
     <title>Settings</title>
-    <script type="text/javascript" src="config.json"></script>
     <link rel="stylesheet" href="index.css">
     <script src="Scripts/prefixfree.min.js" ></script>
-    <script src="Scripts/settings.js" defer></script>
+    <script src="Scripts/settings.js" type="module" defer></script>
 
 </head>
 <body>
@@ -24,7 +23,7 @@
                     <button>Video</button>
                     <button>Audio</button>
                     <button>Subtitle</button>
-                    <button onclick="setSettingsContent('input');">Input</button>
+                    <button id="InputButton">Input</button>
                     <button>Cache</button>
                     <button>Proxy</button>
                     <hr style="width: 100%; border-color: var(--toolbar-background-color); margin: 0; margin-top: auto;"/>
