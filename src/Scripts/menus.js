@@ -35,19 +35,24 @@ export function setBoundingVariables(elem) {
     var temp = parseInt(elem.style.getPropertyValue('--var-w')) + parseInt(elem.style.getPropertyValue('--var-local-x'));
 }
 
-export function generateListMenu(_event, itemList, _id = "", isMain = true) {
+export function generateListMenu(_event, itemList, _id = "", isMain = true, isInner = false) {
     var _items = [];
     const _list = itemList.children;
     var _result = "";
     if (isMain)
         _result = `<div class="list-menu" id="${_id}" style="--mouse-x: ${_event.clientX}px; --mouse-y: ${_event.clientY}px;">`;
-    else
+    else if (!isMain && !isInner)
         _result = `<div class="list-menu child">`;
 
     for(var i = 0; i < _list.length; i++) {
+        // label
         if (_list[i].type == "label") {
             _items[i] = `<label>${_list[i].name}</label>`;
         }
+        else if (_list[i].type == "line") {
+            _items[i] = `<hr/>`;
+        }
+        // div item & div small
         else if (_list[i].type == "item" || _list[i].type == "small item") {
             var _class = "";
             if (_list[i].type == "small item")
@@ -77,11 +82,48 @@ export function generateListMenu(_event, itemList, _id = "", isMain = true) {
             
             _items[i] += `</div>`;
         }
+        // ul
+        else if (_list[i].type == "button group") {
+            var __id = "";
+            if (_list[i].id != "")
+                __id = `id="${_list[i].id}"`;
+            _items[i] = `<ul ${__id} style="${_list[i].sign}">`;
+            const _event_ = _event;
+            const listItem = _list[i];
+            if (_list[i].children.length != 0) {
+                _items[i] += generateListMenu(_event_, listItem, listItem.id + "_menu", false, true); 
+            }
+            if (_list[i].func != null) {
+                elementValidateById(listItem.id, () => {
+                    addListener(listItem.id, listItem.input, listItem.func);
+                });
+                
+            }
+            
+            _items[i] += `</ul>`;
+        }
+        // li
+        else if (_list[i].type == "button") {
+            var __id = "";
+            if (_list[i].id != "")
+                __id = `id="${_list[i].id}"`;
+            _items[i] = `<li ${__id} style="${_list[i].sign}">`;
+
+            const listItem = _list[i];
+            
+            if (_list[i].func != null) {
+                elementValidateById(listItem.id, () => {
+                    addListener(listItem.id, listItem.input, listItem.func);
+                });   
+            }
+            _items[i] += `</li>`;
+        }
     }
 
     for (var i = 0; i < _items.length; i++) {
         _result += _items[i];
     }
+    if (!isInner)
     _result += `</div>`;
     return _result;
 }

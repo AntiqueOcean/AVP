@@ -9,9 +9,9 @@ console.log(213);
 /* ------------ ---------- ------------ */
 //import { config } from './main.js';
 
-import * as basic from './basics.js';
+import { config } from './main.js';
 import * as listen from './listener.js';
-import * as menu from './menus.js';
+
 
 function getKeysForActions() {
     alert(key.play[0]);
@@ -51,7 +51,6 @@ listen.addListener("inputButton", "click", function(){
 });
 
 function setSettingsContent(input) {
-
     const settingsContent = document.getElementById("settingsContent");
     const settingsTitlebar = document.getElementById("settingsTitlebar");
     const settingsContentParent = settingsContent.parentElement;

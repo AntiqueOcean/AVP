@@ -980,11 +980,36 @@ const volumeMenuItems = [volumeMenu00, volumeMenu01,
 const volumeMenuList = new menu.listItem("item", true, "volume", "", "", undefined, volumeMenuItems, "volumeMenu");
 
 
+function getPlayPauseState(){
+    if(video.paused)
+        return "play";
+    return "pause";
+}
+const mainMenuButton00 = new menu.listItem("button", false, "", "--image:url(svg/previous.svg)", "click", function(){
+    playPrevious();
+}, themeMenuItems, "mainMenuPlayPrevious");
+var mainMenuButton01 = new menu.listItem("button", false, "", `--image:url(svg/${getPlayPauseState()}.svg)`, "click", function(){
+    switchPlayPause();
+}, themeMenuItems, "mainMenuPlayPause");
+
+function updateMainContextMenu() {
+    // every item should be defined here
+    // allso for other menus
+    // all of them should have define functions
+    // these functions shold be called from createGeneratedListMenu before anything
+    // these functions should be passed to createGeneratedListMenu
+}
+const mainMenuButton02 = new menu.listItem("button", false, "", "--image:url(svg/next.svg)", "click", function(){
+    playNext();
+}, themeMenuItems, "mainMenuPlayNext");
+var mainMenuButtonGroupItems = [mainMenuButton00, mainMenuButton01, mainMenuButton02];
+var mainMenuButtonGroup01 = new menu.listItem("button group", false, "buttons", "--wrap: no-wrap;", "", undefined, mainMenuButtonGroupItems, "mainMenuButtonGroup");
+const mainMenuLine00 = new menu.listItem("line", false, "", "", "", undefined, undefined, "");
 const mainMenuItem00 = new menu.listItem("item", false, "themes", "🎨", "", undefined, themeMenuItems, "mainMenuThemes");
 const mainMenuItem01 = new menu.listItem("item", false, "settings", "⚙️", "click", function() {
     openSettings();
 }, undefined, "mainMenuSettings");
-const mainMenuItems = [mainMenuItem00, mainMenuItem01];
+const mainMenuItems = [mainMenuButtonGroup01, mainMenuLine00, mainMenuItem00, mainMenuItem01];
 const mainMenuList = new menu.listItem("item", true, "main", "", "", undefined, mainMenuItems, "mainMenu");
 
 listen.addListener("mainCloseButton", "click", function() {
@@ -1093,6 +1118,7 @@ listen.addListener("mainPlayer", "mousewheel", function(e) {
 
 
 listen.addListener("mainPlayer", "contextmenu", function(e) {
+    // add update function to menu.createGeneratedListMenu
     menu.createGeneratedListMenu(menu.generateListMenu(e, mainMenuList, "mainMenuList"));
 }, ["!event"]);
 
