@@ -5,23 +5,16 @@ const { electron } = require('process');
 const fs = require('fs');
 //var configFile = new File("~")
 
-const _config = JSON.parse(fs.readFileSync("src/config.json"));
-const config = _config[0];
+
+//const _config = JSON.parse(fs.readFileSync("src/config.json"));
+//const config = _config[0];
 
 
 
-const CHANNEL_NAME = 'electron';
-const MESSAGE = 'pong';
 
-ipcMain.on(CHANNEL_NAME, (event, data) => {
-  event.returnValue = MESSAGE;
-});
-
-
-
-var hasProxy = false;
-if (config.proxy_type != "none")
-  hasProxy = true;
+// var hasProxy = false;
+// if (config.proxy_type != "none")
+//   hasProxy = true;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -74,12 +67,21 @@ app.on('ready', () => {
       }
     });
 
-    //win.webContents.openDevTools();
+    ipcMain.on("fullScreenState", (event, data) => {
+      event.returnValue = win.isFullScreen();
+    });
+    
+    ipcMain.on("getAppPath", (event, data) => {
+      event.returnValue = app.getAppPath();
+    });
+
+    win.webContents.openDevTools();
+    win.setMenu(null);
     win.loadFile(path.join(__dirname, 'index.html'));
-    if (hasProxy) {
-      var proxyData = config.proxy_type + "://" + config.proxy_server + ":" + config.proxy_port;
-      win.webContents.session.setProxy({proxyRules:proxyData});
-    }
+    // if (hasProxy) {
+    //   var proxyData = config.proxy_type + "://" + config.proxy_server + ":" + config.proxy_port;
+    //   win.webContents.session.setProxy({proxyRules:proxyData});
+    // }
 
     win.show();
 

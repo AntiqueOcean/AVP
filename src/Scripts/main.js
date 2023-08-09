@@ -2,7 +2,7 @@
 /* ------------- [Headers] ------------- */
 /* ------------- --------- ------------- */
 const { dialog, electron, remote,
-        contextBridge, ipcRenderer
+        contextBridge, ipcRenderer, app
 } = require('electron');
 
 const { constants } = require("original-fs");
@@ -12,34 +12,32 @@ const path = require('path');
 const fs = require('fs');
 const { event } = require("jquery");
 
-
-
-const CHANNEL_NAME = 'electron';
-const MESSAGE = 'ping';
-  
-console.log(ipcRenderer.sendSync(CHANNEL_NAME, MESSAGE)); // send request and show response 
-
-
 /* ------------- ----------- ------------- */
 /* ------------- [variables] ------------- */
 /* ------------- ----------- ------------- */
 // loading set variables
-const _config = JSON.parse(fs.readFileSync("src/config.json"));
+
+const appPath = ipcRenderer.sendSync("getAppPath");
+const _config = JSON.parse(fs.readFileSync(appPath + "/src/config.json"));
 const config = _config[0];
-const history = JSON.parse(fs.readFileSync("src/history.json"));
-const key = JSON.parse(fs.readFileSync("src/input.json"))[0];
+const history = JSON.parse(fs.readFileSync(appPath + "/src/history.json"));
+const key = JSON.parse(fs.readFileSync(appPath + "/src/input.json"))[0];
 
 // input variables
 var pausingControl = false;
 var inputingTime = false;
+var fileValueInterval;
+
 
 // global ui variables
 var tickRate = config.tick_rate; //ms
 var isTempMenuOpen = false;
 var previousTheme;
 var lastTopBarHeight = 80;
-var lastBottomBarY = 9999;
+var lastBottomBarY = 200;
 var cursoHideTimer = 500;
+var fullScreenState = false;
+var currentInputElement = null;
 
 // video control variables
 var currentDuration = 0;
@@ -48,7 +46,9 @@ var playing = false;
 var timebarMouseX;
 var forwardingSeconds = config.forwarding_time;
 var currentPath = "none";
-
+var currentDirectory = "";
+var lastDirectory = "none";
+var fileList = [];
 
 //volume control variables
 var lastVolume = 25;
@@ -92,6 +92,7 @@ var notifications = document.getElementById("notifications");
 var mainWin = document.getElementById("mainWin");
 const topBar = document.getElementById("topBar");
 const bottomBar = document.getElementById("bottomBar");
+const barFileSelectInput = document.getElementById("fileSelectInput");
 
 /* ------------- ------------------- ------------- */
 /* ------------- [context menu data] ------------- */
@@ -189,12 +190,14 @@ function generateContext_themes(){
 window.addEventListener("focusin", function(e) {
     if (e.target.nodeName === "INPUT") {
         pauseKeyControl();
+        currentInputElement = e.target;
     }
 })
 
 window.addEventListener("focusout", function(e) {
     if (e.target.nodeName === "INPUT") {
         pauseKeyControl(false);
+        currentInputElement = null;
     }
 })
 
@@ -254,6 +257,8 @@ function safeClose() {
 
 function toggleFullscreen(e){
     ipcRenderer.send("toggleFullscreen");
+    fullScreenState = ipcRenderer.sendSync("fullScreenState");
+    fullscreenUiCheck(e);
 }
 
 function openSettings() {
@@ -288,9 +293,25 @@ function loadVideoFromInput() {
     updateUi();
 }
 
-function loadVideoFromDrop(event, target) {
+function loadVideoFromDrop(event) {
     event.preventDefault();
     loadVideo(event.dataTransfer.files[0].path);
+}
+
+function refreshDirectory() {
+    if (currentDirectory != lastDirectory) {
+        fileList = [];
+        lastDirectory = currentDirectory;
+        fs.readdir(currentDirectory, function(err, _files) {
+            if(!err) {
+                _files.forEach(_file => {
+                    if (_file)
+                    fileList.push(currentDirectory + "/" + _file);
+                });
+
+            }
+        });
+    }
 }
 
 function updateVideoFilters() {
@@ -564,10 +585,9 @@ function updateTimeStamp(event) {
 var tickInterval = setInterval(tick, tickRate);
 function tick() {
     playing = !video.paused;
-    console.log(mainWin.style.cursor);
-    if (cursoHideTimer <= 0 && mainWin.style.cursor != "none")
+    if (cursoHideTimer <= 0 && mainWin.style.cursor != "none" && fullScreenState)
         mainWin.style.cursor = "none";
-    else
+    else if (fullScreenState)
         cursoHideTimer -= tickRate;
 
     if (playing)
@@ -604,6 +624,9 @@ function loadVideo(input) {
     if (config.open_as_left)
         setNewTime(getFromHistory(input));
     currentPath = input;
+    currentDirectory = path.parse(currentPath).dir;
+    refreshDirectory();
+
     if (!video.playing)
         video.play();
     addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, `onclick="removeNotificationById(this.id);"`);
@@ -638,20 +661,38 @@ function getFromHistory(input) {
     return 0;
 }
 
+function quitCurrentAction() {
+    if (currentInputElement != null) {
+        currentInputElement.blur();
+    } else if (fullScreenState) {
+        toggleFullscreen();
+    } else {
+        forcePause();
+        ipcRenderer.send("toggleMinimize");
+    }
+}
+
 function switchPlayPause() {
     if (video != "undefined")
     {
         if (video.paused) {
-            video.play();
-            addNotification("⏯️ Playing", 1000, true, "playState", "var(--alt-color-green)",  `onclick="removeNotificationById(this.id)"`);
+            forcePlay();
         }
         else {
-            video.pause();
-            addNotification("⏯️ Paused", 1000, true, "playState", "var(--alt-color-red)",  `onclick="removeNotificationById(this.id)"`);
+            forcePause();
         }
     }
 }
 
+function forcePlay() {
+    video.play();
+    addNotification("⏯️ Playing", 1000, true, "playState", "var(--alt-color-green)",  `onclick="removeNotificationById(this.id)"`);
+}
+
+function forcePause() {
+    video.pause();
+    addNotification("⏯️ Paused", 1000, true, "playState", "var(--alt-color-red)",  `onclick="removeNotificationById(this.id)"`);
+}
 function forwardSeconds(_sec = forwardingSeconds) {
     setNewTime(currentTime+_sec);
     var _out = "> +" + _sec + "s";
@@ -677,6 +718,13 @@ function playPath() {
       })
 }
 
+function playFiles(input) {
+    
+    if (input.length == 1) {
+        playPath(input[0])
+    }
+}
+
 function setTimeFromInput() {
     setNewTime(convertToSeconds(timeInput.value));
     timeInput.blur();
@@ -687,11 +735,13 @@ function playUrl(intput) {
 }
 
 function playNext() {
-
+    const _index = fileList.indexOf(currentPath) + 1;
+    loadVideo(fileList[_index]);
 }
 
 function playPrevious() {
-
+    const _index = fileList.indexOf(currentPath) - 1;
+    loadVideo(fileList[_index]);
 }
 
 /* ****** [Functions] ***** */
@@ -849,6 +899,7 @@ function toggleSubtitle() {
 /* *** Keyboard Input Functions *** */
 
 function isKey(input, _arr) {
+    if (_arr != null)
     for (var i = 0; i < _arr.length; i++) {
         if (input == _arr[i])
             return true;
@@ -857,8 +908,8 @@ function isKey(input, _arr) {
 }
 
 window.onkeydown = function(event) {
+    var code = event.code;
     if (!pausingControl) {
-        var code = event.code;
         console.log(event.code);
         closeTempMenu();
         if (isKey(code, key.play)) {
@@ -879,6 +930,9 @@ window.onkeydown = function(event) {
         }
         else if (isKey(code, key.mute)) {
             toggleMute();
+        }
+        else if (isKey(code, key.fullscreen)) {
+            toggleFullscreen();
         }
         else if (isKey(code, key.contrastDown)) {
             config.contrast--;
@@ -976,6 +1030,11 @@ window.onkeydown = function(event) {
             addNotification("invert", 1000, true, "invert");
         }
     }
+
+    if (isKey(code, key.quit)) {
+        quitCurrentAction();
+    }
+    
 }
 
 var constantForwarding = false;
@@ -1126,19 +1185,29 @@ function updateLastBarBounds(){
         lastBottomBarY = bottomBar.getBoundingClientRect().y;
 }
 
-addListener("mainWin", "mousemove", function(e){
-        mainWin.style.cursor = "unset";
-        cursoHideTimer = 500;
-        if( (e.clientY > lastTopBarHeight) &&
-            (e.clientY < lastBottomBarY)) {
-                topBar.style.display = "none" ;
-                bottomBar.style.display = "none" ;
+function fullscreenUiCheck(e) {
+    cursoHideTimer = 500;
+    mainWin.style.cursor = "unset";
+        if (fullScreenState) {
+
+            if( (e.clientY > lastTopBarHeight+32) &&
+                (e.clientY < lastBottomBarY-48)  &&
+                e != null) {
+                    topBar.style.display = "none" ;
+                    bottomBar.style.display = "none" ;
+                }
+            else {
+                topBar.style.display = "flex";
+                bottomBar.style.display = "flex";
             }
-        else {
+            updateLastBarBounds();
+        } else {
             topBar.style.display = "flex";
             bottomBar.style.display = "flex";
         }
-        updateLastBarBounds();
+}
+addListener("mainWin", "mousemove", function(e){
+    fullscreenUiCheck(e);
 }, ["!event"]);
 
 addListener("backwardButton", "click", function() {
@@ -1149,6 +1218,22 @@ addListener("backwardButton", "click", function() {
 addListener("playButton", "click", function() {
     this.blur();
     switchPlayPause();
+});
+
+navigator.mediaSession.setActionHandler('previoustrack', function() {
+    playPrevious();
+});
+
+navigator.mediaSession.setActionHandler('nexttrack', function() {
+    playNext();
+});
+
+addListener("previousButton", "click", function() {
+    playPrevious();
+});
+
+addListener("nextButton", "click", function() {
+    playNext();
 });
 
 addListener("forwardButton", "click", function() {
@@ -1163,6 +1248,27 @@ addListener("timeInputForm", "submit", function() {
 addListener("timerBarMiddle", "mousedown", function() {
     updateBar();
 });
+
+addListener("mainWin", "drop", function(e) {
+    loadVideoFromDrop(e);
+}, ["!event"])
+
+addListener("fileAddressForm", "submit", function(e) {
+    loadVideoFromInput();
+}, ["!event"])
+
+
+addListener("fileSelectButton", "click", function(e) {
+    barFileSelectInput.click();
+    fileValueInterval = setInterval(function() {
+        if (barFileSelectInput.value != "" && barFileSelectInput.value != null) {
+            loadVideo(barFileSelectInput.files[0].path);
+            barFileSelectInput.value = "";
+            clearInterval(fileValueInterval);
+        }
+    }, tickRate);
+}, ["!event"])
+
 
 addListener("timerBarMiddle", "mousemove", function(e) {
     updateTimeStamp(e);

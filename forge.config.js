@@ -1,5 +1,6 @@
 module.exports = {
   packagerConfig: {
+    icon: '/home/mak/Documents/GitHub/AVP/src/Styles/images/icon',
     asar: true,
     executableName: "avp"
   },

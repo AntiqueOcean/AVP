@@ -13,7 +13,7 @@
 
   </head>
   <body>
-    <section class="main-win" id="mainWin" ondrop="loadVideoFromDrop(event, this);">
+    <section class="main-win" id="mainWin">
 
       <div id="topBar" class="top-bar">
         <div class="upper">
@@ -28,11 +28,12 @@
             <input type="checkbox" class="edit-button" id="editCheck"/>
             <label for="editCheck"></label>
             <iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
-            <form target="dummyframe" onsubmit="loadVideoFromInput();">
+            <form id="fileAddressForm" target="dummyframe">
               <input id="fnameTitle" spellcheck="false" readonly></input>
-              <input type="text" spellcheck="false" id="fname" name="fname" value="default_file_name.type">
-              <input type="button" onsubmit="loadVideoFromPath();" value="file ↓"/>
+              <input type="text" spellcheck="false" id="fname" name="fname" value="">
               <input type="submit" value="go ↩"/>
+              <input id="fileSelectButton" type="button" value="file ↓"/>
+              <input id="fileSelectInput" type="file" accept="video/*, .mkv" style="display: none;" value=""/>
             </form>
           </div>
         
@@ -44,11 +45,12 @@
       
       </div>
 
-      <div class="lower">
+      <div class="lower" style="margin: 0; max-height: 2px !important;"> <!--
         <button class="tab unselected" >file0</button>
         <button class="tab unselected" >file1</button>
         <button class="tab selected" >file2</button>
         <button class="tab unselected" >file3</button>
+      -->
       </div>
       </div>
       <!-- end of top bar-->
@@ -100,9 +102,9 @@
         <div class="rest">
 
           <div class="left">
-            <button id="previousButton" style="--image: url(svg/subtitle.svg);"></button>
+            <button style="--image: url(svg/subtitle.svg);"></button>
             <button id="themesButton" style="--image: url(svg/mode.svg);"></button>
-            <button id="previousButton" style="--image: url(svg/previous.svg);"></button>
+            <button style="--image: url(svg/previous.svg);"></button>
           </div>
 
           <div class="middle">

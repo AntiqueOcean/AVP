@@ -1,8 +1,8 @@
 {
   "name": "avp",
   "productName": "Antoque Video Player",
-  "version": "1.0.0",
-  "description": "My Electron application description",
+  "version": "0.1-alpha",
+  "description": "cross platform Video(media) player.",
   "main": "src/electron.js",
   "scripts": {
     "start": "electron .",
