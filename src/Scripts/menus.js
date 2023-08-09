@@ -35,7 +35,10 @@ export function setBoundingVariables(elem) {
     var temp = parseInt(elem.style.getPropertyValue('--var-w')) + parseInt(elem.style.getPropertyValue('--var-local-x'));
 }
 
-export function generateListMenu(_event, itemList, _id = "", isMain = true, isInner = false) {
+export function generateListMenu(_event, itemList, _id = "", isMain = true, isInner = false, updateFunction = null) {
+    if (updateFunction != null) {
+        updateFunction();
+    }
     var _items = [];
     const _list = itemList.children;
     var _result = "";
@@ -130,7 +133,6 @@ export function generateListMenu(_event, itemList, _id = "", isMain = true, isIn
 
 export function createGeneratedListMenu(input) {
     closeTempMenu();
-
     document.getElementById("currentTempMenu").innerHTML = input;
     setTimeout(() => {
         window.addEventListener("click", closeTempMenu);
