@@ -1,8 +1,8 @@
 {
   "name": "avp",
-  "productName": "Antoque Video Player",
+  "productName": "AVP",
   "version": "0.1-alpha",
-  "description": "cross platform Video(media) player.",
+  "description": "antique Video Player",
   "main": "src/electron.js",
   "scripts": {
     "start": "electron .",

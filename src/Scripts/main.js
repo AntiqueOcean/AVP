@@ -1,3 +1,8 @@
+/* Copyright (C) 2023 antiqueOcean <antiqueocean.dev@gmail.com> - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 /* ------------- --------- ------------- */
 /* ------------- [Headers] ------------- */
 /* ------------- --------- ------------- */
@@ -18,10 +23,12 @@ const { event } = require("jquery");
 // loading set variables
 
 const appPath = ipcRenderer.sendSync("getAppPath");
-const _config = JSON.parse(fs.readFileSync(appPath + "/src/config.json"));
+const localPath = ipcRenderer.sendSync("getLocalPath");
+
+const _config = JSON.parse(fs.readFileSync(localPath + "/config.json"));
 const config = _config[0];
-const history = JSON.parse(fs.readFileSync(appPath + "/src/history.json"));
-const key = JSON.parse(fs.readFileSync(appPath + "/src/input.json"))[0];
+const history = JSON.parse(fs.readFileSync(localPath + "/history.json"));
+const key = JSON.parse(fs.readFileSync(localPath + "/input.json"))[0];
 
 // input variables
 var pausingControl = false;
@@ -441,7 +448,7 @@ function updateConfigFile() {
         }
     }
 
-    fs.writeFile("src/config.json", _str, (error) => {
+    fs.writeFile(localPath + "/config.json", _str, (error) => {
         if(error) {
             console.error(error);
             throw error;
@@ -461,7 +468,7 @@ function updateHistoryFile() {
         }
     }
 
-    fs.writeFile("src/history.json", _str, (error) => {
+    fs.writeFile(localPath + "/history.json", _str, (error) => {
         if(error) {
             console.error(error);
             throw error;
@@ -629,7 +636,10 @@ function loadVideo(input) {
 
     if (!video.playing)
         video.play();
-    addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, `onclick="removeNotificationById(this.id);"`);
+    if(video.readyState === 4) {
+         addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, `onclick="removeNotificationById(this.id);"`);
+    }
+
     updateAll();
 }
 
@@ -736,12 +746,18 @@ function playUrl(intput) {
 
 function playNext() {
     const _index = fileList.indexOf(currentPath) + 1;
-    loadVideo(fileList[_index]);
+    if (_index < fileList.length)
+        loadVideo(fileList[_index]);
+    else 
+        loadVideo(fileList[0]);
 }
 
 function playPrevious() {
     const _index = fileList.indexOf(currentPath) - 1;
-    loadVideo(fileList[_index]);
+    if (_index >= 0)
+        loadVideo(fileList[_index]);
+    else 
+        loadVideo(fileList[fileList.length-1]);
 }
 
 /* ****** [Functions] ***** */
@@ -1390,3 +1406,4 @@ function createGeneratedListMenu(input) {
         window.addEventListener("contextmenu", closeTempMenu);
     }, 50);
 }
+

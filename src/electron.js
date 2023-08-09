@@ -1,10 +1,14 @@
+/* Copyright (C) 2023 antiqueOcean <antiqueocean.dev@gmail.com> - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 const { app, BrowserWindow, contextBridge,
         ipcMain } = require('electron');
 const path = require('path');
 const { electron } = require('process');
 const fs = require('fs');
-//var configFile = new File("~")
-
+const { platform } = require('os');
 
 //const _config = JSON.parse(fs.readFileSync("src/config.json"));
 //const config = _config[0];
@@ -23,12 +27,36 @@ if (require('electron-squirrel-startup')) {
 
 var win;
 app.on('ready', () => { 
+  const _path = app.getPath('userData');
+  if (!fs.existsSync(_path)) {
+    fs.mkdir(_path, function(err) {
+    });
+  }
+  if (!fs.existsSync(_path + "/config.json")) {
+    fs.writeFile(_path + "/config.json", configDefaultContent, function (err) {
+    });
+  }
+
+  if (!fs.existsSync(_path + "/input.json")) {
+    fs.writeFile(_path + "/input.json", inputDefaultContent, function (err) {
+      if(!err) {
+        console.log(_path + "/input.json");
+      }
+    });
+  }
+
+  if (!fs.existsSync(_path + "/history.json")) {
+    fs.writeFile(_path + "/history.json", historyDefaultContent, function (err) {
+    });
+  }
+
   setTimeout(() => {
     win = new BrowserWindow({
       width: 800,
       height: 600,
       minWidth: 420,
       minHeight: 340,
+      icon: '/home/mak/Documents/GitHub/AVP/src/Styles/images/icon.png',
       fullscreen: false,
       titleBarStyle: 'hidden',
       nodeIntegration: true,
@@ -75,7 +103,12 @@ app.on('ready', () => {
       event.returnValue = app.getAppPath();
     });
 
-    win.webContents.openDevTools();
+    ipcMain.on("getLocalPath", (event, data) => {
+      const _path_ = app.getPath('userData');
+      event.returnValue = _path_;
+    });
+
+    //win.webContents.openDevTools();
     win.setMenu(null);
     win.loadFile(path.join(__dirname, 'index.html'));
     // if (hasProxy) {
@@ -122,3 +155,48 @@ function windowMaximize() {
   console.log(electron);
   electron.BrowserWindow.maximize();
 }
+
+
+const configDefaultContent = `
+[{
+  "proxy_type":"none",
+  "proxy_server":"",
+  "proxy_port":"",
+  "theme":"dark",
+  "font":"medium",
+  "tick_rate":25,
+  "max_history_size":128,
+  "open_last":true,
+  "open_as_left":true,
+  "forwarding_time":10,
+  "volume":100,
+  "last_path":"",
+  "blur":0,
+  "contrast":100,
+  "grayscale":0,
+  "hue":-7,
+  "invert":0,
+  "brightness":100},
+  {
+  }]
+`;
+
+const inputDefaultContent = `
+[{
+  "play":["Space", "KeyP"],
+  "forward":["ArrowRight"],
+  "backward":["ArrowLeft"],
+  "volumeUp":["ArrowUp"],
+  "volumeDown":["ArrowDown"],
+  "mute":["KeyM"],
+  "fullscreen":["KeyF", "F11", "Enter"],
+  "quit":["Escape"],
+  "invert":["KeyI"],
+  "contrastUp":["KeyC"],
+  "contrastReset":["KeyX"],
+  "contrastDown":["KeyZ"]},
+{
+}]
+`;
+
+const historyDefaultContent = "[]";
