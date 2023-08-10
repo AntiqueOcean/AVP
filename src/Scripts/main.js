@@ -110,62 +110,6 @@ const barFileSelectInput = document.getElementById("fileSelectInput");
 /* ------------- [context menu data] ------------- */
 /* ------------- ------------------- ------------- */
 
-var playermenu_items = `
-<ul style='--wrap: no-wrap;'>
-<li style='--image:url(svg/previous.svg)'></li>
-<li style='--image:url(svg/pause.svg)' onclick="switchPlayPause()"></li>
-<li style='--image:url(svg/next.svg)'></li>
-</ul>
-<hr>
-<div class="parent" onmouseover="setBoundingVariables(this);" style="--tag:'📁'" onclick="setTheme('dark', this);">open
-    <div class="list-menu child">
-    <label>offline</label>
-        <div style="--tag:'📼'" onclick="">file</div>
-        <div style="--tag:'📂'" onclick="">directory</div>
-    <label>online</label>
-        <div style="--tag:'🌐'" onclick="">url</div>
-        <div style="--tag:'▶️'" onclick="">youtube</div>
-    </div>
-</div>
-
-<div class="parent" onmouseover="setBoundingVariables(this);" style="--tag:'↩'">recent
-    <div class="list-menu child">
-        <div style="--tag:'⤵'" onclick="">place holder 1</div>
-        <div style="--tag:'⤵'" onclick="">place holder 2</div>
-    </div>
-
-</div>
-
-<div class="parent" onmouseover="setBoundingVariables(this);" style="--tag:'🗨'">subtitle
-    <div class="list-menu child">
-        <div style="--tag:'⤵'" onclick="toggleSubtitle()">place holder 1</div>
-        <div style="--tag:'⤵'" onclick="">place holder 2</div>
-    </div>
-
-</div>
-
-<div class="parent" onmouseover="setBoundingVariables(this);" style="--tag:'👁'"">view
-    <div class="list-menu child">
-        <div class="parent" onmouseover="setBoundingVariables(this);" style="--tag:'🖌️';">themes
-            <div class="list-menu child">
-            
-            </div>
-        </div>
-        <div style="--tag:'↗'" onclick="setFullscreen()">fullscreen</div>
-    </div>
-</div>
-
-<div style="--tag:'*'" onclick="openSettings();">settings</div>
-`;
-
-var volume_items = `
-<label>volume: </label>
-<div style="--tag:'%'" onclick="setVolume(100);">100</div>
-<div style="--tag:'%'" onclick="setVolume(75);">75</div>
-<div style="--tag:'%' " onclick="setVolume(50);">50</div>
-<div style="--tag:'%'" onclick="setVolume(25);">25</div>
-<div style="--tag:'-'" onclick="toggleMute()">mute</div>`;
-
 var info_items = `
 <label>Info: </label>
 <div style="--tag:'🪙' " onclick="">Support</div>
@@ -346,21 +290,6 @@ function placeIn (input) {
     }
     return temp;
 }
-
-// function addTempMenu(event, type, id, items) {
-//     closeTempMenu();
-//     var header;
-//     var code;
-//     if (type == "list-menu") {
-//         header = `<div class="list-menu" id = ${id} style="--mouse-x: ${event.clientX}px; --mouse-y: ${event.clientY}px;">`;
-//     }
-//     code = header + items + "</div>";
-//     document.getElementById("currentTempMenu").innerHTML = code;
-//     setTimeout(() => {
-//         window.addEventListener("click", closeTempMenu);
-//         window.addEventListener("contextmenu", closeTempMenu);
-//     }, 50);
-// }
 
 function getPlayerCurrentColor() {
     var _temp_color = "";
@@ -955,25 +884,38 @@ function fullscreenUiCheck(e) {
         }
 }
 
+var themeMenuLabel00;
+var themeMenuItem00;
+var themeMenuItem01;
+var themeMenuItem02;
+var themeMenuLabel01;
+var themeMenuItem03;
+var themeMenuItem04;
+var themeMenuItem05;
+var themeMenuItems;
+var themeMenuList;    
 
-const themeMenuLabel00 = new menu.listItem("label", false , "themes:");
-const themeMenuItem00 = new menu.listItem("item", false, "dark [default]", "🌖", "click", function(){basic.setTheme("dark", config);}, undefined, "setThemeDark");
-const themeMenuItem01 = new menu.listItem("item", false, "darker", "⚫", "click", function(){basic.setTheme("darker", config);}, undefined, "setThemeDarker");
-const themeMenuItem02 = new menu.listItem("item", false, "light", "☀️", "click", function(){basic.setTheme("light", config);}, undefined, "setThemeLight");
-const themeMenuLabel01 = new menu.listItem("label", false , "other");
-const themeMenuItem03 = new menu.listItem("small item", false, "", "🌳", "click", function(){basic.setTheme("tree", config);}, undefined, "setThemeTree");
-const themeMenuItem04 = new menu.listItem("small item", false, "", "🧀", "click", function(){basic.setTheme("cheese", config);}, undefined, "setThemeCheese");
-const themeMenuItem05 = new menu.listItem("small item", false, "", "🫐", "click", function(){basic.setTheme("blueberry", config);}, undefined, "setThemeBlueberry");
-const themeMenuItems = [themeMenuLabel00, themeMenuItem00, themeMenuItem01, themeMenuItem02,
-                        themeMenuLabel01, themeMenuItem03, themeMenuItem04, themeMenuItem05];
-const themeMenuList = new menu.listItem("item", true, "themes", "", "", undefined, themeMenuItems, "themeMenu");                        
+function updateThemeMenu(){
+    themeMenuLabel00 = new menu.listItem("label", false , "themes:");
+    themeMenuItem00 = new menu.listItem("item", false, "dark [default]", `--tag: '🌖';  background-color: var(${basic.linearCondition(config.theme, "dark", "--selected", "--unselected")});`, "click", function(){basic.setTheme("dark", config);}, undefined, "setThemeDark");
+    themeMenuItem01 = new menu.listItem("item", false, "darker", `--tag: '⚫'; background-color: var(${basic.linearCondition(config.theme, "darker", "--selected", "--unselected")});`, "click", function(){basic.setTheme("darker", config);}, undefined, "setThemeDarker");
+    themeMenuItem02 = new menu.listItem("item", false, "light", `--tag: '☀️';  background-color: var(${basic.linearCondition(config.theme, "light", "--selected", "--unselected")});`, "click", function(){basic.setTheme("light", config);}, undefined, "setThemeLight");
+    themeMenuLabel01 = new menu.listItem("label", false , "other");
+    themeMenuItem03 = new menu.listItem("small item", false, "", `--tag: '🌳'; background-color: var(${basic.linearCondition(config.theme, "tree", "--selected", "--unselected")});`, "click", function(){basic.setTheme("tree", config);}, undefined, "setThemeTree");
+    themeMenuItem04 = new menu.listItem("small item", false, "", `--tag: '🧀'; background-color: var(${basic.linearCondition(config.theme, "cheese", "--selected", "--unselected")});`, "click", function(){basic.setTheme("cheese", config);}, undefined, "setThemeCheese");
+    themeMenuItem05 = new menu.listItem("small item", false, "", `--tag: '🫐'; background-color: var(${basic.linearCondition(config.theme, "blueberry", "--selected", "--unselected")});`, "click", function(){basic.setTheme("blueberry", config);}, undefined, "setThemeBlueberry");
+    themeMenuItems = [themeMenuLabel00, themeMenuItem00, themeMenuItem01, themeMenuItem02,
+                            themeMenuLabel01, themeMenuItem03, themeMenuItem04, themeMenuItem05];
+    themeMenuList = new menu.listItem("item", true, "themes", "", "", undefined, themeMenuItems, "themeMenu");                        
+} updateThemeMenu();
+
 
 const volumeMenu00 = new menu.listItem("label", false , "volume:");
-const volumeMenu01 = new menu.listItem("item", false, "100", "%", "click", function(){setVolume(100)}, undefined, "setVolume100");
-const volumeMenu02 = new menu.listItem("item", false, "75", "%", "click", function(){setVolume(75)}, undefined, "setVolume75");
-const volumeMenu03 = new menu.listItem("item", false, "50", "%", "click", function(){setVolume(50)}, undefined, "setVolume50");
-const volumeMenu04 = new menu.listItem("item", false, "25", "%", "click", function(){setVolume(25)}, undefined, "setVolume25");
-const volumeMenu05 = new menu.listItem("item", false, "mute", "-", "click", toggleMute, undefined, "setVolumeMute");
+const volumeMenu01 = new menu.listItem("item", false, "100", "--tag: '%'", "click", function(){setVolume(100)}, undefined, "setVolume100");
+const volumeMenu02 = new menu.listItem("item", false, "75", "--tag: '%'", "click", function(){setVolume(75)}, undefined, "setVolume75");
+const volumeMenu03 = new menu.listItem("item", false, "50", "--tag: '%'", "click", function(){setVolume(50)}, undefined, "setVolume50");
+const volumeMenu04 = new menu.listItem("item", false, "25", "--tag: '%'", "click", function(){setVolume(25)}, undefined, "setVolume25");
+const volumeMenu05 = new menu.listItem("item", false, "mute", "--tag: '-'", "click", toggleMute, undefined, "setVolumeMute");
 const volumeMenuItems = [volumeMenu00, volumeMenu01,
                         volumeMenu02, volumeMenu03,
                         volumeMenu04, volumeMenu05];   
@@ -1004,21 +946,22 @@ var mainMenuButton02;
 var mainMenuButtonGroupItems;
 var mainMenuButtonGroup01;
 var mainMenuLine00;
-var mainMenuItem00;
+var selectThemeMenuList;
 var mainMenuItem01;
 var mainMenuItems;
 
 var mainMenuList;
 
 function updateMainContextMenu() {
-    openVideoMenuItem00 = new menu.listItem("item", false, "select file", "📼", "click", function(){
+    openVideoMenuItem00 = new menu.listItem("item", false, "select file", "--tag:'📼'", "click", function(){
         fileSelectButton.click();
     }, undefined, "manuSelectFile");
-    openVideoMenuItem01 = new menu.listItem("item", false, "load url", "🔗", "click", function(){
+    openVideoMenuItem01 = new menu.listItem("item", false, "load url", "--tag:'🔗'", "click", function(){
         alert("open by url");
     }, undefined, "manuLoadUrl");
-    openVideoMenuItems = [openVideoMenuItem00, openVideoMenuItem01];
-    openVideoMenuList = new menu.listItem("item", false, "load", "📁", "", undefined, openVideoMenuItems, "openVIdeoMainMenu");
+    updateRecentItems();
+    openVideoMenuItems = [openVideoMenuItem00, openVideoMenuItem01, recentMenuList];
+    openVideoMenuList = new menu.listItem("item", false, "open", "--tag:'📁'", "", undefined, openVideoMenuItems, "openVIdeoMainMenu");
 
     mainMenuButton00 = new menu.listItem("button", false, "", "--image:url(svg/previous.svg)", "click", function(){
         playPrevious();
@@ -1033,14 +976,28 @@ function updateMainContextMenu() {
     mainMenuButtonGroupItems = [mainMenuButton00, mainMenuButton01, mainMenuButton02];
     mainMenuButtonGroup01 = new menu.listItem("button group", false, "buttons", "--wrap: no-wrap;", "", undefined, mainMenuButtonGroupItems, "mainMenuButtonGroup");
     mainMenuLine00 = new menu.listItem("line", false, "", "", "", undefined, undefined, "");
-    mainMenuItem00 = new menu.listItem("item", false, "themes", "🎨", "", undefined, themeMenuItems, "mainMenuThemes");
-    mainMenuItem01 = new menu.listItem("item", false, "settings", "⚙️", "click", function() {
+    updateThemeMenu();
+    selectThemeMenuList = new menu.listItem("item", false, "themes", "--tag:'🎨'", "", undefined, themeMenuItems, "mainMenuThemes");
+    mainMenuItem01 = new menu.listItem("item", false, "settings", "--tag:'⚙️'", "click", function() {
         openSettings();
     }, undefined, "mainMenuSettings");
-    mainMenuItems = [mainMenuButtonGroup01, mainMenuLine00, mainMenuItem00, openVideoMenuList, mainMenuItem01];
+    mainMenuItems = [mainMenuButtonGroup01, mainMenuLine00, openVideoMenuList, selectThemeMenuList,  mainMenuItem01];
+
     mainMenuList = new menu.listItem("item", true, "main", "", "", undefined, mainMenuItems, "mainMenu");
 }
 
+
+var recentMenuList;
+function updateRecentItems() {
+    var recentMenuItems = [];
+    for (var i = 0; i < history.length && i < 10; i++) {
+        const _path = history[i].path;
+        recentMenuItems[i] = new menu.listItem("item", false, basic.shorten(path.parse(history[i].path).base, 45), "", "click", () => {
+            loadVideo(_path);
+        }, undefined, "recent_"+i);
+    }
+    recentMenuList = new menu.listItem("item", false, "recent", "--tag:'📄'", "", undefined, recentMenuItems, "mainMenuRecent");
+} updateRecentItems();
 
 listen.addListener("mainCloseButton", "click", function() {
     safeClose();
@@ -1164,5 +1121,18 @@ listen.addListener("mainPlayer", "mousedown", function(e) {
 
 listen.addListener("themesButton", "click", function(e) {
     e.srcElement.blur();
+    updateThemeMenu();
     menu.createGeneratedListMenu(menu.generateListMenu(e, themeMenuList, "themeMenuList"));
 }, ["!event"]);
+
+listen.addListener("contactMail", "click", function() {
+    navigator.clipboard.writeText("antiqueocean.dev@gmail.com");
+});
+
+listen.addListener("contactTelegram", "click", function() {
+    window.open("https://t.me/antiqueocean/", '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
+});
+
+listen.addListener("removePopUp", "click", function() {
+    document.getElementById("donationPopUp").remove();
+});

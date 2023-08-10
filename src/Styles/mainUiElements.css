@@ -846,8 +846,10 @@
 }
 
 .list-menu > div {
+    --selected: var(--menu1-color4);
+    --unselected: transparent;
     font-size: var(--font-medium);
-    background-color: transparent;
+    background-color: var(--unselected, transparent);
     color: var(--menu1-color3);
     border: none;
     outline: none;
@@ -862,13 +864,12 @@
     text-shadow: 0 2px 4px var(--general-shadow-color);
     transition-duration: 0.1s;
     cursor: pointer;
-
     white-space: nowrap;
     position: relative;
 }
 
 .list-menu > div:hover {
-    background-color: var(--menu1-color4);
+    background-color: var(--menu1-color4) !important;
 }
 
 .list-menu > ul {

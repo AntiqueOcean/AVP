@@ -2,10 +2,10 @@ import { elementValidateById } from './basics.js';
 import { addListener } from './listener.js';
 
 export class listItem {
-    constructor(type, isMain, name, sign = "", input = "", func = null, children = [], id = "") {
+    constructor(type, isMain, name, style = "", input = "", func = null, children = [], id = "") {
         this.name = name;
         this.type = type;
-        this.sign = sign;
+        this.style = style;
         this.input = input;
         this.func = func;
         this.id = id;
@@ -32,7 +32,6 @@ export function setBoundingVariables(elem) {
     elem.style.setProperty('--var-h', selfB.height + 'px');
     elem.style.setProperty('--var-local-x', (selfB.x - parentB.x) + 'px');
     elem.style.setProperty('--var-local-y', (selfB.y - parentB.y) + 'px');
-    var temp = parseInt(elem.style.getPropertyValue('--var-w')) + parseInt(elem.style.getPropertyValue('--var-local-x'));
 }
 
 export function generateListMenu(_event, itemList, _id = "", isMain = true, isInner = false, updateFunction = null) {
@@ -65,14 +64,17 @@ export function generateListMenu(_event, itemList, _id = "", isMain = true, isIn
             var __id = "";
             if (_list[i].id != "")
                 __id = `id="${_list[i].id}"`;
-            _items[i] = `<div ${__id} ${_class} style="--tag:'${_list[i].sign}'">${_list[i].name} `;
+            _items[i] = `<div ${__id} ${_class} style="${_list[i].style}">${_list[i].name} `;
             const _event_ = _event;
             const listItem = _list[i];
             if (_list[i].children.length != 0) {
                 _items[i] += generateListMenu(_event_, listItem, listItem.id + "_menu", false);
 
             elementValidateById(listItem.id, () => {
-                addListener(listItem.id, "mouseover", setBoundingVariables(document.getElementById(listItem.id)));
+                addListener(listItem.id, "mouseover", function(e) {
+                    e.stopPropagation();
+                    setBoundingVariables(document.getElementById(listItem.id));
+                }, ["!event"]);
             });
                     
             }
@@ -90,7 +92,7 @@ export function generateListMenu(_event, itemList, _id = "", isMain = true, isIn
             var __id = "";
             if (_list[i].id != "")
                 __id = `id="${_list[i].id}"`;
-            _items[i] = `<ul ${__id} style="${_list[i].sign}">`;
+            _items[i] = `<ul ${__id} style="${_list[i].style}">`;
             const _event_ = _event;
             const listItem = _list[i];
             if (_list[i].children.length != 0) {
@@ -110,7 +112,7 @@ export function generateListMenu(_event, itemList, _id = "", isMain = true, isIn
             var __id = "";
             if (_list[i].id != "")
                 __id = `id="${_list[i].id}"`;
-            _items[i] = `<li ${__id} style="${_list[i].sign}">`;
+            _items[i] = `<li ${__id} style="${_list[i].style}">`;
 
             const listItem = _list[i];
             

@@ -164,3 +164,21 @@ export function handleNotifications(deltaTime) {
     if (allRemoved)
        notficationsArray = [];
 }
+
+export function linearCondition(_variable, _value, returnTrue, returnFalse) {
+    if (_variable == _value)
+        return returnTrue;
+    return returnFalse;
+}
+
+export function shorten(input, length, sign = "...", cutEnd = true) {
+    const _diff = length - input.length;
+    var result = input;
+    if (_diff < 0) {
+        if (cutEnd)
+            result = input.slice(0, length) + sign;
+        else
+            result = sign + input.slice(_diff);
+    }
+    return result;
+}
