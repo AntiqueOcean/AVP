@@ -10,8 +10,7 @@
     <title id="windowTitle">AVP</title>
     <script type="text/javascript" src="config.json"></script>
     <link rel="stylesheet" href="index.css">
-    <script src="Scripts/prefixfree.min.js" ></script>
-    <!-- <script src="index.js"></script> -->
+    <!-- <script src="scripts/prefixfree.min.js" ></script> -->
     <script src="Scripts/video-js.js"></script>
     <script src="Scripts/main.js" type="module" defer></script>
 
@@ -68,18 +67,21 @@
         </iframe>
       -->
 
-        <video
-        id="video"
-        class="video-js"
-        preload="auto"
-        fluid="true"
-        data-setup="{'html5': {
-          nativeTextTracks: true
-      }}"
-        src=""
-      >
-      </video>
 
+    <video
+      id="video"
+      class="video-js"
+      data-setup="{}"
+      src=""
+    >
+    </video>
+
+    <audio
+      id="audio"
+      data-setup="{}"
+      src=""
+    >
+    </audio>
 
         <div id="donationPopUp" class="donation">
           <h1>Attention!</h1>

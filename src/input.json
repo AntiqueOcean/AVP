@@ -10,6 +10,8 @@
     "invert":["KeyI"],
     "contrastUp":["KeyC"],
     "contrastReset":["KeyX"],
-    "contrastDown":["KeyZ"]},
+    "contrastDown":["KeyZ"],
+    "delayAudioForward":["BracketRight"],
+    "delayAudioBackward":["BracketLeft"]},
 {
 }]

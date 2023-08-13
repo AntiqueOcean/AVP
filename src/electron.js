@@ -14,6 +14,7 @@ const { platform } = require('os');
 
 const configDefaultContent = `
 [{
+  "temp_popup":true,
   "proxy_type":"none",
   "proxy_server":"",
   "proxy_port":"",
@@ -31,7 +32,13 @@ const configDefaultContent = `
   "grayscale":0,
   "hue":-7,
   "invert":0,
-  "brightness":100},
+  "autoPlay":true,
+  "autoPlayNext":true,
+  "replay":false,
+  "brightness":100,
+  "audioDelayAmount":0,
+  "audioDelayAddingAmount":50,
+  "autoSync":true},
   {
   }]
 `;
@@ -47,9 +54,23 @@ const inputDefaultContent = `
   "fullscreen":["KeyF", "F11", "Enter"],
   "quit":["Escape"],
   "invert":["KeyI"],
-  "contrastUp":["KeyC"],
+  "contrastDown":["KeyZ"],
   "contrastReset":["KeyX"],
-  "contrastDown":["KeyZ"]},
+  "contrastUp":["KeyC"],
+  "brightnessDown":["KeyQ"],
+  "brightnessReset":["KeyW"],
+  "brightnessUp":["KeyE"],
+  "hueDown":["KeyA"],
+  "hueReset":["KeyS"],
+  "hueUp":["KeyD"],
+  "grayDown":["KeyR"],
+  "grayReset":["KeyT"],
+  "grayUp":["KeyY"],
+  "blurDown":["KeyV"],
+  "blurReset":["KeyB"],
+  "blurUp":["KeyN"],
+  "delayAudioForward":["BracketRight"],
+  "delayAudioBackward":["BracketLeft"]},
 {
 }]
 `;
@@ -154,7 +175,7 @@ app.on('ready', () => {
       event.returnValue = _path_;
     });
 
-    //win.webContents.openDevTools();
+    win.webContents.openDevTools();
     win.setMenu(null);
     win.loadFile(path.join(__dirname, 'index.html'));
     // if (hasProxy) {

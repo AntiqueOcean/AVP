@@ -11,6 +11,7 @@ import * as basic from './basics.js';
 import * as listen from './listener.js';
 import * as menu from './menus.js';
 
+
 const { dialog, electron, remote,
         contextBridge, ipcRenderer, app
 } = require('electron');
@@ -63,12 +64,16 @@ var currentPath = "none";
 var currentDirectory = "";
 var lastDirectory = "none";
 var fileList = [];
+var replay = config.replay;
 
-//volume control variables
+//Audio control variables
 var lastVolume = 25;
+var audioCheck = 2000;
+var autoSync = config.autoSync;
+var syncAmount = 0.15;
 
-
-
+//play control
+const currentPlayData = new basic.playData;
 
 //windows
 var settingsWindow;
@@ -91,7 +96,8 @@ var filePathInput = document.getElementById("fname");
 var fileTitle = document.getElementById("fnameTitle");
 var editCheck = document.getElementById("editCheck");
 
-//volume control elements
+//Audio control elements
+var audio = document.getElementById("audio");
 var volumeBar = document.getElementById("volumeBar");
 var volumeBarBg = document.getElementById("volumeBarBg");
 var volumeController = document.getElementById("volumeController");
@@ -161,15 +167,20 @@ mainPlayer.addEventListener("dragover", function(event) {
 
 function init() {
     setVolume(config.volume);
+    audio.controls = false;
+    video.muted = true;
     if (config.open_last) {
         loadVideo(config.last_path);
     }
-
+    // temp
+    if (!config.temp_popup)
+        document.getElementById("donationPopUp").style.display = "none";
+    
     updateAll();
 } 
 
 function safeClose() {
-    config.volume = Math.round(video.volume*100);
+    config.volume = Math.round(audio.volume*100);
     if (video.readyState == 4)
         config.last_path = currentPath;
     basic.updateConfigFile(config);
@@ -229,7 +240,7 @@ function refreshDirectory() {
         fs.readdir(currentDirectory, function(err, _files) {
             if(!err) {
                 _files.forEach(_file => {
-                    if (_file)
+                    if (_file && basic.isOfType(path.extname(_file).slice(1)))
                     fileList.push(currentDirectory + "/" + _file);
                 });
 
@@ -399,6 +410,7 @@ function setNewTime(input) {
       settingTime = input;
     }
     video.currentTime = settingTime;
+    audio.currentTime = settingTime;
     currentTime = settingTime;
   }
   
@@ -433,6 +445,22 @@ function tick() {
     currentTime = video.currentTime;
     updateTimerUi();
     basic.handleNotifications(tickRate);
+    if (video.currentTime >= video.duration - 0.25) {
+        if (replay) {
+            setNewTime(0);
+            forcePlay();
+        }
+        else if (config.autoPlayNext)
+            playNext(true);
+    }
+    audioCheck -= tickRate;
+    if(autoSync)
+    if ((audioCheck <= 0) && (video.currentTime - audio.currentTime + (config.audioDelayAmount/1000) >= syncAmount)) {
+        syncAudio();
+        console.log("synced");
+        audioCheck = 2000;
+    }
+
 }
 
 var updateBarMouseUpInterval;
@@ -451,33 +479,60 @@ function setNewTimeEnd(){
 
 /* ***** [Functions] ***** */
 /* Video Control Functions */
-//loadVideo("/home/mak/Downloads/Video/Its.Always.Sunny.in.Philadelphia.S02E08.480p.WEB-DL.PaHe.VinaDL.mkv");
-function loadVideo(input) {
-    if(video.readyState === 4) {
-        addCurrentToHistory();
-    }
-    video.setAttribute("src", input);
-    if (config.open_as_left)
-        setNewTime(getFromHistory(input));
-    currentPath = input;
-    currentDirectory = path.parse(currentPath).dir;
-    refreshDirectory();
 
-    if (!video.playing)
-        video.play();
-    if(video.readyState === 4) {
-         basic.addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, `onclick="removeNotificationById(this.id);"`);
-    }
+const videoJsConfig = {
+    controls: true,
+    autoplay: false,
+    preload: 'auto',
+    fluid: true,
+    height: 600,
+    width: 800,
+  
+    textTrackSettings: true
+  
+    // html5: {
+    //   nativeTextTracks: false
+    // }
+    };
 
-    updateAll();
+function loadVideo(input, reset_current = false) {
+    if (basic.isOfType(path.extname(input).slice(1))) {
+        if(video.readyState === 4) {
+            addCurrentToHistory(!reset_current);
+        }
+
+        video.setAttribute("src", input);
+        audio.setAttribute("src", input);
+
+
+        if (config.open_as_left) {
+            const _time_ = getFromHistory(input);
+            //if (_time_ >= (video.duration - 0.25))
+                setNewTime(_time_);
+        }
+        currentPath = input;
+        currentDirectory = path.parse(currentPath).dir;
+        refreshDirectory();
+        if (config.autoPlay) {
+            forcePlay();
+        }
+        if(video.readyState === 4) {
+            basic.addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, `onclick="removeNotificationById(this.id);"`);
+        }
+
+        updateAll();
+    }
 }
 
-function addCurrentToHistory() {
+function addCurrentToHistory(add_as_is = true) {
     if (video.readyState === 4 && config.open_as_left) {
         var _exists = false;
+        var _time = 0;
+        if (add_as_is && video.currentTime < video.duration - 10)
+            _time = video.currentTime;
         for (var i = 0; i < history.length; i++) {
             if (currentPath == history[i].path) {
-                history[i].last = video.currentTime;
+                history[i].last = _time;
                 _exists = true;
                 break;
             }
@@ -524,8 +579,11 @@ function switchPlayPause() {
 }
 
 function forcePlay() {
-    if (video.readyState == 4) {
+
         video.play();
+        audio.play();
+        audio.currentTime = video.currentTime + (config.audioDelayAmount/1000);
+    if (video.readyState == 4) {
         basic.addNotification("⏯️ Playing", 1000, true, "playState", "var(--alt-color-green)",  `onclick="removeNotificationById(this.id)"`);
     }
 }
@@ -533,6 +591,7 @@ function forcePlay() {
 function forcePause() {
     if (video.readyState == 4) {
         video.pause();
+        audio.pause();
         basic.addNotification("⏯️ Paused", 1000, true, "playState", "var(--alt-color-red)",  `onclick="removeNotificationById(this.id)"`);
     }
 }
@@ -576,12 +635,12 @@ function playUrl(intput) {
 
 }
 
-function playNext() {
+function playNext(reset_current = false) {
     const _index = fileList.indexOf(currentPath) + 1;
     if (_index < fileList.length)
-        loadVideo(fileList[_index]);
+        loadVideo(fileList[_index], reset_current);
     else 
-        loadVideo(fileList[0]);
+        loadVideo(fileList[0], reset_current);
 }
 
 function playPrevious() {
@@ -593,12 +652,15 @@ function playPrevious() {
 }
 
 /* ****** [Functions] ***** */
-/* Volume Control Functions */
+/* Audio Control Functions */
 
+function syncAudio() {
+    audio.currentTime = video.currentTime + (config.audioDelayAmount/1000);
+}
 function updateVolumeUi(){
-    volumeBar.style.width = (video.volume*100) + "%";
-    volumeNumberInput.value = Math.round(video.volume * 100);
-    if (video.volume == 0) 
+    volumeBar.style.width = (audio.volume*100) + "%";
+    volumeNumberInput.value = Math.round(audio.volume * 100);
+    if (audio.volume == 0) 
         muteButton.style.setProperty("--image", "url(svg/audioOff.svg)");
     else 
         muteButton.style.setProperty("--image", "url(svg/audioOn.svg)");
@@ -611,7 +673,7 @@ function setVolume(input) {
         _input = 100;
     else if (input < 0) 
         _input = 0;
-    video.volume = _input/100;
+    audio.volume = _input/100;
     if (_input != 0)
         basic.addNotification("🔈" + Math.round(_input) + "%", 1000, true, "volumechange");
     else {
@@ -626,7 +688,7 @@ function setVolumeFromBar(event) {
     var width = (poistion / volumeBarBg.getBoundingClientRect().width) * 100;
     if (width < 10) {
         width = 0;
-        lastVolume = Math.round(video.volume * 100);
+        lastVolume = Math.round(audio.volume * 100);
     }
     else if (width > 90)
         width = 100;
@@ -636,7 +698,7 @@ function setVolumeFromBar(event) {
 function setVolumeFromMouseWheel(event) {
     var _amount = 2;
     var _direction = -1;
-    var _current = video.volume;
+    var _current = audio.volume;
     if (event.deltaY < 0)
     _direction = 1;
     setVolume((_current * 100)+(_amount*_direction));
@@ -648,12 +710,12 @@ function setVolumeFromInput() {
 
 
 function toggleMute(){
-    if (video.volume === 0 && lastVolume != 0)
+    if (audio.volume === 0 && lastVolume != 0)
         setVolume(lastVolume);
-    else if (video.volume == 0 && lastVolume == 0)
+    else if (audio.volume == 0 && lastVolume == 0)
         setVolume(25);
     else {
-        lastVolume = Math.round(video.volume * 100);
+        lastVolume = Math.round(audio.volume * 100);
         setVolume(0);
     }    
 }
@@ -692,10 +754,10 @@ window.onkeydown = function(event) {
             backwardSeconds();
         }
         else if (basic.isKey(code, key.volumeUp)) {
-            setVolume(video.volume*100+2);
+            setVolume(audio.volume*100+2);
         }
         else if (basic.isKey(code, key.volumeDown)) {
-            setVolume(video.volume*100-2);
+            setVolume(audio.volume*100-2);
         }
         else if (basic.isKey(code, key.mute)) {
             toggleMute();
@@ -705,13 +767,13 @@ window.onkeydown = function(event) {
         }
         else if (basic.isKey(code, key.contrastDown)) {
             config.contrast--;
-            config.contrast = range(config.contrast, 0, 300);
+            config.contrast = basic.range(config.contrast, 0, 300);
             updateVideoFilters();
             basic.addNotification("contrast: " + config.contrast, 1000, true, "contrast");
         }
-        else if (basic.isKey(code, key.ContrastUp)) {
+        else if (basic.isKey(code, key.contrastUp)) {
             config.contrast++;
-            config.contrast = range(config.contrast, 0, 300);
+            config.contrast = basic.range(config.contrast, 0, 300);
             updateVideoFilters();
             basic.addNotification("contrast: " + config.contrast, 1000, true, "contrast");
         }
@@ -720,83 +782,95 @@ window.onkeydown = function(event) {
             updateVideoFilters();
             basic.addNotification("contrast: " + config.contrast, 1000, true, "contrast");
         }
-        else if (code == "KeyA") {
+        else if (basic.isKey(code, key.grayDown)) {
             config.grayscale--;
-            config.grayscale = range(config.grayscale, 0, 100);
+            config.grayscale = basic.range(config.grayscale, 0, 100);
             updateVideoFilters();
             basic.addNotification("grayscale: " + config.grayscale, 1000, true, "grayscale");
         }
-        else if (code == "KeyD") {
+        else if (basic.isKey(code, key.grayUp)) {
             config.grayscale++;
-            config.grayscale = range(config.grayscale, 0, 100);
+            config.grayscale = basic.range(config.grayscale, 0, 100);
             updateVideoFilters();
             basic.addNotification("grayscale: " + config.grayscale, 1000, true, "grayscale");
         }
-        else if (code == "KeyS") {
+        else if (basic.isKey(code, key.grayReset)) {
             config.grayscale = 0;
             updateVideoFilters();
             basic.addNotification("grayscale: " + config.grayscale, 1000, true, "grayscale");
         }
-        else if (code == "KeyF") {
+        else if (basic.isKey(code, key.hueDown)) {
             config.hue--;
-            config.hue = range(config.hue, -180, 180);
+            config.hue = basic.range(config.hue, -180, 180);
             updateVideoFilters();
             basic.addNotification("hue: " + config.hue, 1000, true, "hue");
         }
-        else if (code == "KeyH") {
+        else if (basic.isKey(code, key.hueUp)) {
             config.hue++;
-            config.hue = range(config.hue, -180, 180);
+            config.hue = basic.range(config.hue, -180, 180);
             updateVideoFilters();
             basic.addNotification("hue: " + config.hue, 1000, true, "hue");
         }
-        else if (code == "KeyG") {
+        else if (basic.isKey(code, key.hueReset)) {
             config.hue = 0;
             updateVideoFilters();
             basic.addNotification("hue: " + config.hue, 1000, true, "hue");
         }
-        else if (code == "KeyV") {
+        else if (basic.isKey(code, key.blurDown)) {
             config.blur--;
-            config.blur = range(config.blur, 0, 40);
+            config.blur = basic.range(config.blur, 0, 40);
             updateVideoFilters();
             basic.addNotification("blur: " + config.blur, 1000, true, "blur");
         }
-        else if (code == "KeyN") {
+        else if (basic.isKey(code, key.blurUp)) {
             config.blur++;
-            config.blur = range(config.blur, 0, 40);
+            config.blur = basic.range(config.blur, 0, 40);
             updateVideoFilters();
             basic.addNotification("blur: " + config.blur, 1000, true, "blur");
         }
-        else if (code == "KeyB") {
+        else if (basic.isKey(code, key.blurReset)) {
             config.blur = 0;
             updateVideoFilters();
             basic.addNotification("blur: " + config.blur, 1000, true, "blur");
         }
-        else if (code == "") {
+        else if (basic.isKey(code, key.brightnessDown)) {
             config.brightness--;
-            config.brightness = range(config.brightness, 0, 400);
+            config.brightness = basic.range(config.brightness, 0, 400);
             updateVideoFilters();
             basic.addNotification("brightness: " + config.brightness, 1000, true, "brightness");
         }
-        else if (code == "") {
+        else if (basic.isKey(code, key.brightnessUp)) {
             config.brightness++;
-            config.brightness = range(config.brightness, 0, 400);
+            config.brightness = basic.range(config.brightness, 0, 400);
             updateVideoFilters();
             basic.addNotification("brightness: " + config.brightness, 1000, true, "brightness");
         }
-        else if (code == "") {
+        else if (basic.isKey(code, key.brightnessReset)) {
             config.brightness = 100;
             updateVideoFilters();
             basic.addNotification("brightness: " + config.brightness, 1000, true, "brightness");
         }
         else if (basic.isKey(code, key.invert)) {
             if(config.invert == 100)
-            {
                 config.invert = 0;
-            }
             else
                 config.invert = 100;
             updateVideoFilters();
             basic.addNotification("invert", 1000, true, "invert");
+        }
+        else if (basic.isKey(code, key.delayAudioBackward)) {
+            config.audioDelayAmount -= config.audioDelayAddingAmount;
+            syncAudio();
+            if (config.audioDelayAmount == 0)
+                audio.currentTime = video.currentTime ;
+            basic.addNotification("Audio Delay: " + config.audioDelayAmount , 1000, true, "audioDelay");
+        }
+        else if (basic.isKey(code, key.delayAudioForward)) {
+            config.audioDelayAmount += config.audioDelayAddingAmount;
+            syncAudio();
+            if (config.audioDelayAmount == 0)
+                audio.currentTime = video.currentTime ;
+            basic.addNotification("Audio Delay: " + config.audioDelayAmount , 1000, true, "audioDelay");
         }
     }
 
@@ -961,7 +1035,9 @@ function updateMainContextMenu() {
     }, undefined, "manuLoadUrl");
     updateRecentItems();
     openVideoMenuItems = [openVideoMenuItem00, openVideoMenuItem01, recentMenuList];
-    openVideoMenuList = new menu.listItem("item", false, "open", "--tag:'📁'", "", undefined, openVideoMenuItems, "openVIdeoMainMenu");
+    openVideoMenuList = new menu.listItem("item", false, "open", "--tag:'📁'", "click", function(){
+        fileSelectButton.click();
+    }, openVideoMenuItems, "openVIdeoMainMenu");
 
     mainMenuButton00 = new menu.listItem("button", false, "", "--image:url(svg/previous.svg)", "click", function(){
         playPrevious();
@@ -1023,6 +1099,14 @@ listen.addListener("backwardButton", "click", function() {
 listen.addListener("playButton", "click", function() {
     this.blur();
     switchPlayPause();
+});
+
+navigator.mediaSession.setActionHandler('play', function() {
+    forcePlay();
+});
+
+navigator.mediaSession.setActionHandler('pause', function() {
+    forcePause();
 });
 
 navigator.mediaSession.setActionHandler('previoustrack', function() {
@@ -1134,5 +1218,6 @@ listen.addListener("contactTelegram", "click", function() {
 });
 
 listen.addListener("removePopUp", "click", function() {
+    config.temp_popup = false;
     document.getElementById("donationPopUp").remove();
 });

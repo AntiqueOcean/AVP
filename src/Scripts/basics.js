@@ -1,6 +1,7 @@
 const fs = require('fs');
 const { ipcRenderer } = require('electron');
 const localPath = ipcRenderer.sendSync("getLocalPath");
+const supportedExtensions = ["mp4", "mkv", "avi", "ogg", "mpg", "wmv"];
 
 // const _config = JSON.parse(fs.readFileSync(localPath + "/config.json"));
 // const config = _config[0];
@@ -181,4 +182,59 @@ export function shorten(input, length, sign = "...", cutEnd = true) {
             result = sign + input.slice(_diff);
     }
     return result;
+}
+
+
+export function isOfType(input) {
+    
+    for (var i = 0; i < supportedExtensions.length; i++)
+        if (input == supportedExtensions[i])
+            return true;
+    return false;
+}
+
+// **********************************************
+// play data
+// **********************************************
+
+export class videoData {
+    constructor(name, duration, path, format, last, width, height, bitrate, fps, size, codec) {
+        this.name = name;
+        this.duration = duration;
+        this.path = path;
+        this.format = format;
+        this.last = last;
+        this.width = width;
+        this.height = height;
+        this.bitrate = bitrate;
+        this.fps = fps;
+        this.size = size;
+        this.codec = codec;
+    }
+};
+
+export class audioData {
+    constructor(name, format, bitrate, rate, channels) {
+        this.name = name;
+        this.format = format;
+        this.bitrate = bitrate;
+        this.rate = rate;
+        this.channels = channels;
+    }
+};
+
+export class subtitileData {
+    constructor(name, format, language) {
+        this.name = name;
+        this.format = format;
+        this.language = language;
+    }
+};
+
+export class playData {
+    constructor(video, audio, subtitle) {
+        this.video = video;
+        this.audio = audio;
+        this.subtitle = subtitle;
+    }
 }
