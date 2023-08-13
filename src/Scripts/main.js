@@ -7,6 +7,7 @@
 /* ------------- [Headers] ------------- */
 /* ------------- --------- ------------- */
 
+
 import * as basic from './basics.js';
 import * as listen from './listener.js';
 import * as menu from './menus.js';
@@ -77,7 +78,10 @@ var autoSync = config.autoSync;
 var syncAmount = 0.15;
 
 //play control
+var streams = [];
+var metadata;
 const currentPlayData = new basic.playData;
+
 
 //windows
 var settingsWindow;
@@ -244,15 +248,40 @@ function loadVideoFromDrop(event) {
     loadVideo(event.dataTransfer.files[0].path);
 }
 
-
+function runIfValid(input, _func, _step = 25) {
+    var _validateInvertal = setInterval(() => {
+        if (input != null && typeof input != 'undefined') {
+            _func();
+            clearInterval(_validateInvertal);
+        }
+    }, _step);
+}
+var _validateStreamsInterval;
 function setPlayData(input) {
-    const _stat = fs.statSync(input);
-    currentPlayData.video = new basic.videoData(path.parse(input).name, video.duration, input, path.extname(input), getFromHistory(input), video.videoWidth, video.videoHeight, 128, 30, _stat.size, "none");
-    currentPlayData.audio = [];
-    for (var i = 0; i < video.audioTracks.length; i++) {
-        currentPlayData.audio[i] = new basic.audioData(video.audioTracks[i].label, video.audioTracks[i].kind, 128, video.audioTracks[i].language, video.audioTracks[i].enabled);
-    }
-    alert(currentPlayData.audio);
+    streams = null;
+    metadata = null;
+    basic.ffmpeg(input).ffprobe(function(err, _metadata_) {
+        metadata = _metadata_;
+        streams = [];
+        for(var i = 0; i < _metadata_.streams.length; i++)
+            streams.push(_metadata_.streams[i]);
+    });
+
+    _validateStreamsInterval = setInterval(() => {
+
+        if (metadata != null) {
+            console.log(metadata);
+            currentPlayData.video = new basic.videoData(path.parse(input).name, metadata.streams[0].duration, input, path.extname(input), getFromHistory(input), video.videoWidth, video.videoHeight, 128, 30, streams[0].codec_name);
+            // currentPlayData.audio = [];
+            // for (var i = 0; i < video.audioTracks.length; i++) {
+            //     currentPlayData.audio[i] = new basic.audioData(video.audioTracks[i].label, video.audioTracks[i].kind, 128, video.audioTracks[i].language, video.audioTracks[i].enabled);
+            // }
+            clearInterval(_validateStreamsInterval);
+        }
+    }, 50);
+
+    
+
 }
 
 function refreshDirectory() {
@@ -516,16 +545,11 @@ function generatePreview(input){
       });
       previewGenerationProcess = basic.ffmpeg().input(input).outputOption('-r', previewStep).saveToFile(localPath + '/preview/%003d.jpg').on('progress', function(progress){
         fs.readdir(localPath + "/preview", function(err, _files) {
-            if(!err) {
                 previewArray = [];
                 _files.forEach(_file => {
                     if (_file)
                         previewArray.push(localPath + "/preview/" + _file);
                 });
-                isPreviewReady = true;
-            }
-            else 
-                isPreviewReady = false;
         });
 
 
@@ -603,7 +627,7 @@ function loadVideo(input, reset_current = false) {
             }
 
 
-            //setPlayData(input);
+            setPlayData(input);
             console.log(video.videoHeight);
             const _newHeight = topBar.getBoundingClientRect().height + bottomBar.getBoundingClientRect().height + basic.range(video.videoHeight, 0, window.screen.height-40);
             ipcRenderer.invoke("setWindowSize", basic.range(video.videoWidth, 0, window.screen.width-80), _newHeight);
@@ -1122,7 +1146,7 @@ function updateMainContextMenu() {
         fileSelectButton.click();
     }, undefined, "manuSelectFile");
     openVideoMenuItem01 = new menu.listItem("item", false, "load url", "--tag:'🔗'", "click", function(){
-        alert("open by url");
+        console.log(streams[0]);
     }, undefined, "manuLoadUrl");
     updateRecentItems();
     openVideoMenuItems = [openVideoMenuItem00, openVideoMenuItem01, recentMenuList];

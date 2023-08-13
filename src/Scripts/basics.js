@@ -1,8 +1,12 @@
 const fs = require('fs');
 
 const ffmpegStatic = require('ffmpeg-static');
+const ffprobeStatic = require('ffprobe-static');
 export const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegStatic);
+ffmpeg.setFfprobePath(ffprobeStatic.path);
+
+
 
 const { ipcRenderer } = require('electron');
 const localPath = ipcRenderer.sendSync("getLocalPath");
