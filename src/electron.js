@@ -38,7 +38,9 @@ const configDefaultContent = `
   "brightness":100,
   "audioDelayAmount":0,
   "audioDelayAddingAmount":50,
-  "autoSync":true},
+  "autoSync":true,
+  "showPreview":true,
+  "previewStep":0.05},
   {
   }]
 `;
@@ -97,6 +99,14 @@ app.on('ready', () => {
   const _path = app.getPath('userData');
   if (!fs.existsSync(_path)) {
     fs.mkdir(_path, function(err) {
+    });
+  }
+  if (!fs.existsSync(_path + "/preview")) {
+    fs.mkdir(_path + "/preview", function(err) {
+    });
+  }
+  if (!fs.existsSync(_path + "/subtitles")) {
+    fs.mkdir(_path + "/subtitles", function(err) {
     });
   }
   if (!fs.existsSync(_path + "/config.json")) {
@@ -175,7 +185,7 @@ app.on('ready', () => {
       event.returnValue = _path_;
     });
 
-    win.webContents.openDevTools();
+    //win.webContents.openDevTools();
     win.setMenu(null);
     win.loadFile(path.join(__dirname, 'index.html'));
     // if (hasProxy) {

@@ -24,6 +24,7 @@ body {
   background-color: transparent;
   min-width: 400px;
   -webkit-user-drag: none;
+  overflow: hidden;
 }
 
 .main-win {

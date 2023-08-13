@@ -80,7 +80,11 @@ export function generateListMenu(_event, itemList, _id = "", isMain = true, isIn
             }
             if (_list[i].func != null) {
                 elementValidateById(listItem.id, () => {
-                    addListener(listItem.id, listItem.input, listItem.func);
+                    addListener(listItem.id, listItem.input, function(e) {
+                        e.stopPropagation();
+                        listItem.func();
+                        closeTempMenu();
+                    }, ["!event"]);
                 });
                 
             }

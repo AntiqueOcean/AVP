@@ -1,4 +1,9 @@
 const fs = require('fs');
+
+const ffmpegStatic = require('ffmpeg-static');
+export const ffmpeg = require('fluent-ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegStatic);
+
 const { ipcRenderer } = require('electron');
 const localPath = ipcRenderer.sendSync("getLocalPath");
 const supportedExtensions = ["mp4", "mkv", "avi", "ogg", "mpg", "wmv"];
@@ -214,12 +219,12 @@ export class videoData {
 };
 
 export class audioData {
-    constructor(name, format, bitrate, rate, channels) {
+    constructor(name, format, bitrate, language, status) {
         this.name = name;
         this.format = format;
         this.bitrate = bitrate;
-        this.rate = rate;
-        this.channels = channels;
+        this.language = language;
+        this.status = status;
     }
 };
 
@@ -238,3 +243,6 @@ export class playData {
         this.subtitle = subtitle;
     }
 }
+
+
+

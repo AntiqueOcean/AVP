@@ -1,7 +1,7 @@
 {
   "name": "avp",
   "productName": "AVP",
-  "version": "0.1-alpha",
+  "version": "0.1.1-alpha",
   "description": "antique Video Player",
   "main": "src/electron.js",
   "scripts": {
@@ -11,11 +11,18 @@
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\""
   },
-  "keywords": [],
-  "author": "AntiqueOcean",
-  "license": "MIT",
+  "keywords": [
+    "Player",
+    "Video",
+    "VideoPlayer",
+    "Media"
+  ],
+  "author": "AntiqueOcean_Muhammad_Ali_Kalantari",
+  "license": "GPL-3.0-or-later",
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0",
+    "ffmpeg-static": "^5.1.0",
+    "fluent-ffmpeg": "^2.1.2",
     "jquery": "^3.7.0",
     "rpmbuild": "^0.0.23",
     "update-electron-app": "^2.0.1",

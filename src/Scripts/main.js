@@ -36,7 +36,7 @@ export const config = _config[0];
 const history = JSON.parse(fs.readFileSync(localPath + "/history.json"));
 const key = JSON.parse(fs.readFileSync(localPath + "/input.json"))[0];
 
-
+var ffmpegProcess;
 
 // input variables
 var pausingControl = false;
@@ -47,6 +47,10 @@ var fileValueInterval;
 // global ui variables
 var tickRate = config.tick_rate; //ms
 var isTempMenuOpen = false;
+var isPreviewReady = false;
+var previewArray = [];
+var previewArrayLength = 0;
+
 
 var lastTopBarHeight = 80;
 var lastBottomBarY = 200;
@@ -77,6 +81,11 @@ const currentPlayData = new basic.playData;
 
 //windows
 var settingsWindow;
+
+
+//ffmpeg variables
+var killFfmpeg = false;
+
 /* ------------- ---------- ------------- */
 /* ------------- [Elements] ------------- */
 /* ------------- ---------- ------------- */
@@ -85,6 +94,7 @@ var settingsWindow;
 var mainPlayer = document.getElementById("mainPlayer");
 var video = document.getElementById("video");
 var timeStamp = document.getElementById("timeStamp"); 
+var previewImage = document.getElementById("preview"); 
 var timeInput = document.getElementById("timeInput");
 var timerBarMiddle = document.getElementById("timerBarMiddle"); 
 var timerBarMiddleBar = document.getElementById("timerBarMiddleBar");
@@ -183,10 +193,11 @@ function safeClose() {
     config.volume = Math.round(audio.volume*100);
     if (video.readyState == 4)
         config.last_path = currentPath;
-    basic.updateConfigFile(config);
     addCurrentToHistory();
-
     updateHistoryFile();
+    basic.updateConfigFile(config);
+    if (ffmpegProcess)
+        ffmpegProcess.kill();
     setInterval (() => {window.close();}, 250);
 }
 
@@ -231,6 +242,17 @@ function loadVideoFromInput() {
 function loadVideoFromDrop(event) {
     event.preventDefault();
     loadVideo(event.dataTransfer.files[0].path);
+}
+
+
+function setPlayData(input) {
+    const _stat = fs.statSync(input);
+    currentPlayData.video = new basic.videoData(path.parse(input).name, video.duration, input, path.extname(input), getFromHistory(input), video.videoWidth, video.videoHeight, 128, 30, _stat.size, "none");
+    currentPlayData.audio = [];
+    for (var i = 0; i < video.audioTracks.length; i++) {
+        currentPlayData.audio[i] = new basic.audioData(video.audioTracks[i].label, video.audioTracks[i].kind, 128, video.audioTracks[i].language, video.audioTracks[i].enabled);
+    }
+    alert(currentPlayData.audio);
 }
 
 function refreshDirectory() {
@@ -390,6 +412,12 @@ function updateUi() {
     fileTitle.value = path.parse(currentPath).base;
     windowTitle.innerHTML = "AVP [" + path.parse(currentPath).base + ']';
     filePathInput.value = currentPath;
+    if (config.showPreview) {
+        previewImage.display = "block";
+    }
+    else {
+        previewImage.display = "none";
+    }
 }
 
 function updateAll(){
@@ -412,7 +440,7 @@ function setNewTime(input) {
     video.currentTime = settingTime;
     audio.currentTime = settingTime;
     currentTime = settingTime;
-  }
+}
   
   function updateTimerUi(input){
     if (!inputingTime)
@@ -426,7 +454,14 @@ function updateTimeStamp(event) {
     timebarMouseX = event.clientX;
     var leftPos = timerBarMiddle.getBoundingClientRect().left + window.scrollX;
     timeStamp.style.left = (timebarMouseX-leftPos-(timeStamp.getBoundingClientRect().width / 2))+'px';
-    timeStamp.innerHTML = basic.calcSeconds(((timebarMouseX-leftPos) / timerBarMiddle.getBoundingClientRect().width) * (currentDuration)) + ' [' + (Math.round(((((timebarMouseX-leftPos) / timerBarMiddle.getBoundingClientRect().width) * (currentDuration)/currentDuration*100)) * 10)/10).toFixed(1)+'%]'; 
+    const _percent_ = (Math.round(((((timebarMouseX-leftPos) / timerBarMiddle.getBoundingClientRect().width) * (currentDuration)/currentDuration*100)) * 10)/10).toFixed(1);
+    timeStamp.innerHTML = basic.calcSeconds(((timebarMouseX-leftPos) / timerBarMiddle.getBoundingClientRect().width) * (currentDuration)) + ' [' + _percent_ +'%]';
+    if (config.showPreview) {
+        previewImage.style.setProperty("--position-y" , timeStamp.getBoundingClientRect().top - previewImage.getBoundingClientRect().height - 8 + "px");
+        previewImage.style.setProperty("--position-x" , timebarMouseX - previewImage.getBoundingClientRect().width/2 + "px");
+        //if(isPreviewReady)
+        previewImage.setAttribute('src', getPreviewByPercent(_percent_));
+    }
 }
 
 
@@ -463,6 +498,40 @@ function tick() {
 
 }
 
+function generatePreview(input){
+    if (config.showPreview) {
+    isPreviewReady = false;
+    const previewStep = 0.05;
+    previewArrayLength = Math.round(video.duration * previewStep);
+    previewImage.setAttribute ("src", "Styles/images/loadingPreview.jpg");
+    fs.readdir(localPath + "/preview", (err, files) => {
+      
+        for (const file of files) {
+          fs.unlink(path.join(localPath + "/preview", file), (err) => {
+            if (err) throw err;
+          });
+        }
+      });
+      ffmpegProcess = basic.ffmpeg().input(input).outputOption('-r', previewStep).saveToFile(localPath + '/preview/%003d.jpg').on('progress', function(progress){
+        fs.readdir(localPath + "/preview", function(err, _files) {
+            if(!err) {
+                previewArray = [];
+                _files.forEach(_file => {
+                    if (_file)
+                        previewArray.push(localPath + "/preview/" + _file);
+                });
+                isPreviewReady = true;
+            }
+            else 
+                isPreviewReady = false;
+        });
+
+
+    });
+  
+}
+}
+
 var updateBarMouseUpInterval;
 function updateBar() {
         window.addEventListener("mouseup", setNewTimeEnd);
@@ -472,7 +541,6 @@ function updateBar() {
 function setNewTimeEnd(){
     clearInterval(updateBarMouseUpInterval);
     window.removeEventListener("mouseup", setNewTimeEnd);
-    //delete updateBarMouseUpInterval;
 }
 
 
@@ -495,32 +563,50 @@ const videoJsConfig = {
     // }
     };
 
+function getPreviewByPercent(input) {
+    const _file = previewArray[Math.round(previewArrayLength/100*input)];
+    if (fs.existsSync(_file)) 
+        return _file;
+    else {
+        console.log(Math.round(previewArrayLength/100*input));
+        return "Styles/images/loadingPreview.jpg";
+
+    }
+}
+
 function loadVideo(input, reset_current = false) {
     if (basic.isOfType(path.extname(input).slice(1))) {
         if(video.readyState === 4) {
             addCurrentToHistory(!reset_current);
         }
-
+        
         video.setAttribute("src", input);
         audio.setAttribute("src", input);
+        
+        video.onloadeddata = function() {
+            generatePreview(input);
+            if (config.open_as_left) {
+                const _time_ = getFromHistory(input);
+                //if (_time_ >= (video.duration - 0.25))
+                    setNewTime(_time_);
+            }
+            currentPath = input;
+            currentDirectory = path.parse(currentPath).dir;
+            refreshDirectory();
+            if (config.autoPlay) {
+                forcePlay();
+            }
+            if(video.readyState === 4) {
+                basic.addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, `onclick="removeNotificationById(this.id);"`);
+            }
 
 
-        if (config.open_as_left) {
-            const _time_ = getFromHistory(input);
-            //if (_time_ >= (video.duration - 0.25))
-                setNewTime(_time_);
-        }
-        currentPath = input;
-        currentDirectory = path.parse(currentPath).dir;
-        refreshDirectory();
-        if (config.autoPlay) {
-            forcePlay();
-        }
-        if(video.readyState === 4) {
-            basic.addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, `onclick="removeNotificationById(this.id);"`);
+            //setPlayData(input);
+            updateAll();
         }
 
-        updateAll();
+
+
     }
 }
 
@@ -579,7 +665,6 @@ function switchPlayPause() {
 }
 
 function forcePlay() {
-
         video.play();
         audio.play();
         audio.currentTime = video.currentTime + (config.audioDelayAmount/1000);

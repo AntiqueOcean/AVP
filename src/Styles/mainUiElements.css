@@ -508,7 +508,9 @@
     flex: 1 1;
     align-self: stretch;
     border-radius: 6px;
+    
     background-image: linear-gradient(to right, var(--bottombar-timer-bg2) , var(--bottombar-timer-bg1));
+
     border-top: 1px solid var(--bottombar-bg1);
     box-shadow: inset -4px -4px 8px var(--general-shadow-color-half);
     border-bottom: 1px solid var(--bottombar-bg1);
@@ -543,7 +545,7 @@
     width: fit-content;
     height: fit-content;
     left: 0px;
-    visibility: hidden;
+    display: none;
     background-color: var(--bottombar-bg1);
     color: var(--bottombar-text-color1);
     font-size: var(--font-small);
@@ -555,6 +557,21 @@
     box-shadow: 0 0 8px 1px var(--general-shadow-color);
 }
 
+.bottom-bar > .timer-bar > .middle > .preview {
+    --position-y: 0;
+    --position-x: 0;
+    position: absolute;
+    display: none;
+    top: var(--position-y);
+    left: var(--position-x);
+    border-radius: 6px;
+    height: calc(var(--font-huge) * 7);
+    border: 2px solid var(--bottombar-bg1);
+    box-shadow: 0 0 8px 1px var(--general-shadow-color);
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
 .bottom-bar > .timer-bar > .middle > .bar:hover{
     background-image: linear-gradient(to right, var(--bottombar-accent2) , var(--bottombar-accent1));
     border-right-width: 8px;
@@ -564,7 +581,11 @@
 }
 
 .bottom-bar > .timer-bar > .middle:hover > .stamp{
-    visibility: visible;
+    display: block;
+}
+
+.bottom-bar > .timer-bar > .middle:hover > .preview{
+    display: block;
 }
 
 .bottom-bar > .timer-bar > .right{
