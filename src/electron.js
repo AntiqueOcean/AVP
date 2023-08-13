@@ -133,6 +133,7 @@ app.on('ready', () => {
       height: 600,
       minWidth: 420,
       minHeight: 340,
+      resizable: true,
       icon: '/home/mak/Documents/GitHub/AVP/src/Styles/images/icon.png',
       fullscreen: false,
       titleBarStyle: 'hidden',
@@ -172,20 +173,24 @@ app.on('ready', () => {
       }
     });
 
-    ipcMain.on("fullScreenState", (event, data) => {
+    ipcMain.on("fullScreenState", (event) => {
       event.returnValue = win.isFullScreen();
     });
     
-    ipcMain.on("getAppPath", (event, data) => {
+    ipcMain.on("getAppPath", (event) => {
       event.returnValue = app.getAppPath();
     });
 
-    ipcMain.on("getLocalPath", (event, data) => {
+    ipcMain.on("getLocalPath", (event) => {
       const _path_ = app.getPath('userData');
       event.returnValue = _path_;
     });
 
-    //win.webContents.openDevTools();
+    ipcMain.handle("setWindowSize", async(event, width, height) => {
+      win.setSize(width, height);;
+    });
+
+    win.webContents.openDevTools();
     win.setMenu(null);
     win.loadFile(path.join(__dirname, 'index.html'));
     // if (hasProxy) {

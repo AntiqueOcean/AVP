@@ -36,7 +36,7 @@ export const config = _config[0];
 const history = JSON.parse(fs.readFileSync(localPath + "/history.json"));
 const key = JSON.parse(fs.readFileSync(localPath + "/input.json"))[0];
 
-var ffmpegProcess;
+var previewGenerationProcess;
 
 // input variables
 var pausingControl = false;
@@ -196,8 +196,8 @@ function safeClose() {
     addCurrentToHistory();
     updateHistoryFile();
     basic.updateConfigFile(config);
-    if (ffmpegProcess)
-        ffmpegProcess.kill();
+    if (previewGenerationProcess != null)
+        previewGenerationProcess.kill();
     setInterval (() => {window.close();}, 250);
 }
 
@@ -499,6 +499,8 @@ function tick() {
 }
 
 function generatePreview(input){
+    if (previewGenerationProcess != null)
+        previewGenerationProcess.kill();
     if (config.showPreview) {
     isPreviewReady = false;
     const previewStep = 0.05;
@@ -512,7 +514,7 @@ function generatePreview(input){
           });
         }
       });
-      ffmpegProcess = basic.ffmpeg().input(input).outputOption('-r', previewStep).saveToFile(localPath + '/preview/%003d.jpg').on('progress', function(progress){
+      previewGenerationProcess = basic.ffmpeg().input(input).outputOption('-r', previewStep).saveToFile(localPath + '/preview/%003d.jpg').on('progress', function(progress){
         fs.readdir(localPath + "/preview", function(err, _files) {
             if(!err) {
                 previewArray = [];
@@ -584,7 +586,7 @@ function loadVideo(input, reset_current = false) {
         audio.setAttribute("src", input);
         
         video.onloadeddata = function() {
-            generatePreview(input);
+            
             if (config.open_as_left) {
                 const _time_ = getFromHistory(input);
                 //if (_time_ >= (video.duration - 0.25))
@@ -602,6 +604,10 @@ function loadVideo(input, reset_current = false) {
 
 
             //setPlayData(input);
+            console.log(video.videoHeight);
+            const _newHeight = topBar.getBoundingClientRect().height + bottomBar.getBoundingClientRect().height + basic.range(video.videoHeight, 0, window.screen.height-40);
+            ipcRenderer.invoke("setWindowSize", basic.range(video.videoWidth, 0, window.screen.width-80), _newHeight);
+            generatePreview(input);
             updateAll();
         }
 
