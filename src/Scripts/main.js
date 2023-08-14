@@ -8,21 +8,15 @@
 /* ------------- --------- ------------- */
 
 
+
 import * as basic from './basics.js';
 import * as listen from './listener.js';
 import * as menu from './menus.js';
 
 
-const { dialog, electron, remote,
-        contextBridge, ipcRenderer, app
-} = require('electron');
-
-const { constants } = require("original-fs");
-
+const { dialog, electron, ipcRenderer } = require('electron');
 const path = require('path');
-// const { electron } = require('process');
 const fs = require('fs');
-const { event } = require("jquery");
 
 /* ------------- ----------- ------------- */
 /* ------------- [variables] ------------- */
@@ -37,7 +31,7 @@ export const config = _config[0];
 const history = JSON.parse(fs.readFileSync(localPath + "/history.json"));
 const key = JSON.parse(fs.readFileSync(localPath + "/input.json"))[0];
 
-var previewGenerationProcess;
+
 
 // input variables
 var pausingControl = false;
@@ -51,7 +45,7 @@ var isTempMenuOpen = false;
 var isPreviewReady = false;
 var previewArray = [];
 var previewArrayLength = 0;
-
+var previewGenerationProcess;
 
 var lastTopBarHeight = 80;
 var lastBottomBarY = 200;
@@ -70,18 +64,26 @@ var currentDirectory = "";
 var lastDirectory = "none";
 var fileList = [];
 var replay = config.replay;
+var checkIfVideoIsPlaying = true;
+var checkIfVideoIsPlayingTime = 0;
+
 
 //Audio control variables
 var lastVolume = 25;
 var audioCheck = 2000;
 var autoSync = config.autoSync;
 var syncAmount = 0.15;
+var audioExtractProcess = null;
+
+//Subtitle control variables
+var subtitleExtractProcess = null;
 
 //play control
-var streams = [];
+
 var metadata;
 const currentPlayData = new basic.playData;
-
+var initExtractionRuningProcesses = 2;
+var mediaLoadUpInterval = null;
 
 //windows
 var settingsWindow;
@@ -245,42 +247,107 @@ function loadVideoFromInput() {
 
 function loadVideoFromDrop(event) {
     event.preventDefault();
-    loadVideo(event.dataTransfer.files[0].path);
+    if (basic.isOfType(path.extname(event.dataTransfer.files[0].path).slice(1)))
+        loadVideo(event.dataTransfer.files[0].path);
 }
 
 function runIfValid(input, _func, _step = 25) {
-    var _validateInvertal = setInterval(() => {
+    var _validateThisInvertal = setInterval(() => {
         if (input != null && typeof input != 'undefined') {
             _func();
-            clearInterval(_validateInvertal);
+            clearInterval(_validateThisInvertal);
         }
     }, _step);
 }
-var _validateStreamsInterval;
-function setPlayData(input) {
-    streams = null;
+
+function getSubtitleFormat(input) {
+    if (input == "subrip")
+        return "srt";
+    return input;
+}
+var _validateStreamsInterval = null;
+var diff;
+var initExportRanOnce = false;
+function loadMetadata(input) {
+    diff = Date.now() 
+
     metadata = null;
     basic.ffmpeg(input).ffprobe(function(err, _metadata_) {
         metadata = _metadata_;
-        streams = [];
-        for(var i = 0; i < _metadata_.streams.length; i++)
-            streams.push(_metadata_.streams[i]);
     });
 
-    _validateStreamsInterval = setInterval(() => {
 
-        if (metadata != null) {
-            console.log(metadata);
-            currentPlayData.video = new basic.videoData(path.parse(input).name, metadata.streams[0].duration, input, path.extname(input), getFromHistory(input), video.videoWidth, video.videoHeight, 128, 30, streams[0].codec_name);
-            // currentPlayData.audio = [];
-            // for (var i = 0; i < video.audioTracks.length; i++) {
-            //     currentPlayData.audio[i] = new basic.audioData(video.audioTracks[i].label, video.audioTracks[i].kind, 128, video.audioTracks[i].language, video.audioTracks[i].enabled);
-            // }
-            clearInterval(_validateStreamsInterval);
-        }
-    }, 50);
-
+    clearInterval(_validateStreamsInterval);
+    initExportRanOnce = false;
+    setTimeout(() => {
+        _validateStreamsInterval = setInterval(() => {
+            if (metadata != null && !initExportRanOnce) {
+                console.log(metadata);
+                currentPlayData.video = [];
+                currentPlayData.audio = [];
+                currentPlayData.subtitle = [];
+                
+                for (var i = 0; i < metadata.streams.length; i++) {
+                    if (metadata.streams[i].codec_type == "video") {
+                        currentPlayData.video.push(new basic.videoData(metadata.streams[i].index, metadata.streams[i].width, metadata.streams[i].height, metadata.streams[i].bitrate, metadata.streams[i].r_frame_rate, metadata.streams[i].codec_name));
+                    }
+                    else if (metadata.streams[i].codec_type == "audio") {
+                        currentPlayData.audio.push(new basic.audioData(metadata.streams[i].index, metadata.streams[i].codec_name, metadata.streams[i].bit_rate, metadata.streams[i].tags.title, metadata.streams[i].tags.language, false));
+                    }
+                    else if (metadata.streams[i].codec_type == "subtitle") {
+                        currentPlayData.subtitle.push(new basic.subtitileData(metadata.streams[i].index, metadata.streams[i].codec_name, metadata.streams[i].tags.title, metadata.streams[i].tags.language));
+                    }
+                }
     
+                //start of audio and subtitle extraction
+                initExtractionRuningProcesses = 2;
+    
+                if (audioExtractProcess != null)
+                    audioExtractProcess.kill();
+                if (subtitleExtractProcess != null)
+                    subtitleExtractProcess.kill();
+    
+                audioExtractProcess = null;
+                subtitleExtractProcess = null;
+    
+                if (currentPlayData.audio.length != 0) {
+                    removeFilesFromDirectory("audiotracks");
+                    var _audioExtractcode = "audioExtractProcess = basic.ffmpeg().input(input)";
+                    for (var i = 0; i < currentPlayData.audio.length; i++) {
+                        const _outputPath = localPath + "/audiotracks/" + i + "_" + currentPlayData.audio[i].language + "_" + "." + currentPlayData.audio[i].format;
+                        _audioExtractcode += `.saveToFile("${_outputPath}").outputOption("-map", "0:a:${i}").outputOption("-c", "copy")`;
+                        currentPlayData.audio[i].path = _outputPath;
+                    }
+                    _audioExtractcode += `.on("end", () => {
+                        initExtractionRuningProcesses--;
+                    });`;
+                    eval(_audioExtractcode);
+                } else {
+                    initExtractionRuningProcesses--;
+                }
+    
+               
+                if (currentPlayData.subtitle.length != 0) {
+                    removeFilesFromDirectory("subtitles");
+                    var _subtitleExtractCode = "subtitleExtractProcess = basic.ffmpeg().input(input)";
+                    for (var i = 0; i < currentPlayData.subtitle.length; i++) {
+                        _subtitleExtractCode += `.saveToFile(localPath + "/subtitles/${i + "_" + currentPlayData.subtitle[i].language + "_" + currentPlayData.subtitle[i].title}.${getSubtitleFormat(currentPlayData.subtitle[i].format)}").outputOption("-map", "0:s:${i}").outputOption("-c", "copy")`;
+                    }
+                    _subtitleExtractCode += `.on("end", () => {
+                        initExtractionRuningProcesses--;
+                    });`;
+                    eval(_subtitleExtractCode);
+                } else {
+                    initExtractionRuningProcesses--;
+                }
+    
+                // end of audio and subtitle extraction
+                initExportRanOnce = true;
+                clearInterval(_validateStreamsInterval);
+                _validateStreamsInterval = null;
+            }
+        }, 50);
+    }, 50);
 
 }
 
@@ -399,7 +466,7 @@ function updateHistoryFile() {
 
     fs.writeFile(localPath + "/history.json", _str, (error) => {
         if(error) {
-            console.error(error);
+            //console.error(error);
             throw error;
         }
     });
@@ -521,12 +588,25 @@ function tick() {
     if(autoSync)
     if ((audioCheck <= 0) && (video.currentTime - audio.currentTime + (config.audioDelayAmount/1000) >= syncAmount)) {
         syncAudio();
-        console.log("synced");
         audioCheck = 2000;
     }
-
+    if (checkIfVideoIsPlaying) {
+        checkIfVideoIsPlayingTime -= tickRate;
+        if (checkIfVideoIsPlayingTime <= 0) {
+            basic.addNotification("Err: video:<br/> <u>[" + currentPath + "]</u><br/>is not valid, <small>playing next in the directory.</small>", 5000, false, "videoIsNotValid", "red");
+            playNext();
+        }
+    }
 }
 
+function removeFilesFromDirectory(input) {
+    fs.readdir(localPath + "/" + input, (err, files) => {
+      
+        for (const file of files) {
+          fs.unlink(path.join(localPath + "/" + input, file), () => {});
+        }
+      });
+}
 function generatePreview(input){
     if (previewGenerationProcess != null)
         previewGenerationProcess.kill();
@@ -535,14 +615,7 @@ function generatePreview(input){
     const previewStep = 0.05;
     previewArrayLength = Math.round(video.duration * previewStep);
     previewImage.setAttribute ("src", "Styles/images/loadingPreview.jpg");
-    fs.readdir(localPath + "/preview", (err, files) => {
-      
-        for (const file of files) {
-          fs.unlink(path.join(localPath + "/preview", file), (err) => {
-            if (err) throw err;
-          });
-        }
-      });
+    removeFilesFromDirectory("preview");
       previewGenerationProcess = basic.ffmpeg().input(input).outputOption('-r', previewStep).saveToFile(localPath + '/preview/%003d.jpg').on('progress', function(progress){
         fs.readdir(localPath + "/preview", function(err, _files) {
                 previewArray = [];
@@ -574,69 +647,79 @@ function setNewTimeEnd(){
 /* ***** [Functions] ***** */
 /* Video Control Functions */
 
-const videoJsConfig = {
-    controls: true,
-    autoplay: false,
-    preload: 'auto',
-    fluid: true,
-    height: 600,
-    width: 800,
-  
-    textTrackSettings: true
-  
-    // html5: {
-    //   nativeTextTracks: false
-    // }
-    };
-
 function getPreviewByPercent(input) {
     const _file = previewArray[Math.round(previewArrayLength/100*input)];
     if (fs.existsSync(_file)) 
         return _file;
     else {
-        console.log(Math.round(previewArrayLength/100*input));
         return "Styles/images/loadingPreview.jpg";
 
     }
 }
 
 function loadVideo(input, reset_current = false) {
-    if (basic.isOfType(path.extname(input).slice(1))) {
-        if(video.readyState === 4) {
-            addCurrentToHistory(!reset_current);
+
+    if(video.readyState === 4) 
+        addCurrentToHistory(!reset_current);
+    currentPath = input;
+    currentDirectory = path.parse(currentPath).dir;
+    refreshDirectory();
+
+    video.setAttribute("src", input);
+
+    checkIfVideoIsPlaying = true;
+    checkIfVideoIsPlayingTime = 2000;
+    loadMetadata(input);
+    if (mediaLoadUpInterval != null)
+        clearInterval(mediaLoadUpInterval);
+    mediaLoadUpInterval = setInterval(function() {
+        if (initExtractionRuningProcesses == 0) {
+            console.log("took: " + ((Date.now() - diff)/1000) + "s");
+            // const _srt = basic.srt.fromSrt(fs.readFileSync("/home/mak/.config/AVP/subtitles/0_undefined_FilmKio.com.srt"));
+            // console.log(_srt);
+            alert(currentPlayData.audio[0].path);
+            audio.setAttribute("src", currentPlayData.audio[0].path);
+            clearInterval(mediaLoadUpInterval);
+            mediaLoadUpInterval = null;
         }
-        
-        video.setAttribute("src", input);
-        audio.setAttribute("src", input);
-        
-        video.onloadeddata = function() {
-            
-            if (config.open_as_left) {
-                const _time_ = getFromHistory(input);
-                //if (_time_ >= (video.duration - 0.25))
-                    setNewTime(_time_);
-            }
-            currentPath = input;
-            currentDirectory = path.parse(currentPath).dir;
-            refreshDirectory();
-            if (config.autoPlay) {
-                forcePlay();
-            }
-            if(video.readyState === 4) {
-                basic.addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, `onclick="removeNotificationById(this.id);"`);
-            }
+    }, 10);
+    // when the first frame of video is rendered
+    // meaning the video is playon and is valid
+    video.onloadeddata = function() {
+        // video is loaded and there is no need to check for validation anymore
+        // this process happens in tick function
+        checkIfVideoIsPlaying = false;
 
+        // checks if option [open_as_left] is enabled, then gets last
+        // time it was playing from history and sets the newtime to that
+        if (config.open_as_left) {
 
-            setPlayData(input);
-            console.log(video.videoHeight);
-            const _newHeight = topBar.getBoundingClientRect().height + bottomBar.getBoundingClientRect().height + basic.range(video.videoHeight, 0, window.screen.height-40);
-            ipcRenderer.invoke("setWindowSize", basic.range(video.videoWidth, 0, window.screen.width-80), _newHeight);
-            generatePreview(input);
-            updateAll();
+            const _time_ = getFromHistory(input);
+            // if (_time_ >= (video.duration - 0.25))
+                setNewTime(_time_);
         }
 
+        // makes sure that the video plays immidiatly after load
+        // (if the option [autoplay] is enabled)
+        //if (config.autoPlay) 
+            //forcePlay();
+        
+        // adds notification, stating that the current video is playing
+        basic.addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, undefined, function(){
+            basic.removeNotificationById("notif_videoTitle");
+        });
+        
 
 
+        // set window size accordong to video
+        const _newHeight = topBar.getBoundingClientRect().height + bottomBar.getBoundingClientRect().height + basic.range(video.videoHeight, 0, window.screen.height-40);
+        ipcRenderer.invoke("setWindowSize", basic.range(video.videoWidth, 0, window.screen.width-80), _newHeight);
+
+        // generates preview (if the option is enabled)
+        generatePreview(input);
+
+        // updates all (including ui, ...)
+        updateAll();
     }
 }
 
@@ -754,8 +837,9 @@ function playNext(reset_current = false) {
     const _index = fileList.indexOf(currentPath) + 1;
     if (_index < fileList.length)
         loadVideo(fileList[_index], reset_current);
-    else 
+    else {
         loadVideo(fileList[0], reset_current);
+    }
 }
 
 function playPrevious() {
@@ -792,7 +876,10 @@ function setVolume(input) {
     if (_input != 0)
         basic.addNotification("🔈" + Math.round(_input) + "%", 1000, true, "volumechange");
     else {
-        basic.addNotification("🔇 Muted", 4000, true, "mute", undefined, `onclick="toggleMute(); removeNotificationById(this.id);"`);
+        basic.addNotification("🔇 Muted", 4000, true, "muted", undefined, undefined, function(){
+            toggleMute();
+            basic.removeNotificationById("notif_muted");
+        });
     }
     updateVolumeUi();
 }
@@ -965,14 +1052,14 @@ window.onkeydown = function(event) {
             updateVideoFilters();
             basic.addNotification("brightness: " + config.brightness, 1000, true, "brightness");
         }
-        else if (basic.isKey(code, key.invert)) {
-            if(config.invert == 100)
-                config.invert = 0;
-            else
-                config.invert = 100;
-            updateVideoFilters();
-            basic.addNotification("invert", 1000, true, "invert");
-        }
+        // else if (basic.isKey(code, key.invert)) {
+        //     if(config.invert == 100)
+        //         config.invert = 0;
+        //     else
+        //         config.invert = 100;
+        //     updateVideoFilters();
+        //     basic.addNotification("invert", 1000, true, "invert");
+        // }
         else if (basic.isKey(code, key.delayAudioBackward)) {
             config.audioDelayAmount -= config.audioDelayAddingAmount;
             syncAudio();

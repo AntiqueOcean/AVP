@@ -25,8 +25,11 @@
     "ffprobe": "^1.1.2",
     "ffprobe-static": "^3.1.0",
     "fluent-ffmpeg": "^2.1.2",
+    "howler": "^2.2.3",
     "jquery": "^3.7.0",
     "rpmbuild": "^0.0.23",
+    "srt-parser-2": "^1.2.3",
+    "subtitle": "^4.2.1",
     "update-electron-app": "^2.0.1",
     "videojs-youtube": "^3.0.1"
   },

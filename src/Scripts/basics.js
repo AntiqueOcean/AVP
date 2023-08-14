@@ -1,7 +1,11 @@
+import { addListener } from './listener.js';
+
 const fs = require('fs');
 
 const ffmpegStatic = require('ffmpeg-static');
 const ffprobeStatic = require('ffprobe-static');
+
+
 export const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegStatic);
 ffmpeg.setFfprobePath(ffprobeStatic.path);
@@ -97,10 +101,12 @@ export function setTheme(input, _config, notify = true) {
     current[0] = 'theme-'+input;
     current = current.join(" ");
     document.documentElement.setAttribute('class', current);
-
     _config.theme = input;
+
     if (notify)
-        addNotification("🖌️ " + input + " theme, <u>click to undo</u>", 8000, true, "themeChanged", undefined, `onclick="setTheme('` + previousTheme + `')"`);
+        addNotification("🖌️ " + input + " theme, <u>click to undo</u>", 8000, true, "themeChanged", undefined, undefined, function(){
+            setTheme(previousTheme, _config);
+        });
 }
 
 
@@ -108,12 +114,17 @@ export function setTheme(input, _config, notify = true) {
 /* ***** [Functions] **** */
 /* Notification Functions */
 
-export function addNotification(input, duration, unique = false, _name = "none", color = "var(--notification-text-color)", _additional) {
+export function addNotification(input, duration, unique = false, _name = "none", color = "var(--notification-text-color)", _additional, _func = null, _eventTrigger = "click") {
     var _code;
-    if (unique)
-        _code = `<button id="notif_` + _name + `" tabindex="-1" style="--animation-duration: ${duration/1000}s; --text-color: ${color};" ` + _additional + `>` + input + `</button>`;
-    else
-        _code = `<button id="notif_` + lastNotficationId + `" tabindex="-1" style="--animation-duration: ${duration/1000}s; --text-color: ${color};" ` + _additional + `>` + input + `</button>`;
+    var _id;
+    if (unique) {
+        _id = "notif_" + _name;
+        _code = `<button id="${_id}" tabindex="-1" style="--animation-duration: ${duration/1000}s; --text-color: ${color};" ` + _additional + `>` + input + `</button>`;
+    }
+    else {
+        _id = "notif_" + lastNotficationId;
+        _code = `<button id="${_id}" tabindex="-1" style="--animation-duration: ${duration/1000}s; --text-color: ${color};" ` + _additional + `>` + input + `</button>`;
+    }
 
     var _index = notficationsArray.length;
     if (!unique) {
@@ -138,6 +149,11 @@ export function addNotification(input, duration, unique = false, _name = "none",
         notficationsArray[_index] = new Array("notif_" + _name, duration);
     }
     notifications.insertAdjacentHTML('beforeend', _code);
+    elementValidateById(_id, function(){
+        addListener(_id, _eventTrigger, function(){
+            _func();
+        })
+    }, 50);
     lastNotficationId++;
 }
 
@@ -207,44 +223,47 @@ export function isOfType(input) {
 // **********************************************
 
 export class videoData {
-    constructor(name, duration, path, format, last, width, height, bitrate, fps, size, codec) {
-        this.name = name;
-        this.duration = duration;
-        this.path = path;
-        this.format = format;
-        this.last = last;
+    constructor(index, width, height, bitrate, fps, codec) {
+        this.index = index;
         this.width = width;
         this.height = height;
         this.bitrate = bitrate;
         this.fps = fps;
-        this.size = size;
         this.codec = codec;
     }
 };
 
 export class audioData {
-    constructor(name, format, bitrate, language, status) {
-        this.name = name;
+    constructor(index, format, bitrate, title, language, status, path = "undefined") {
+        this.index = index;
         this.format = format;
         this.bitrate = bitrate;
+        this.title = title;
         this.language = language;
         this.status = status;
+        this.path = path;
     }
 };
 
 export class subtitileData {
-    constructor(name, format, language) {
-        this.name = name;
+    constructor(index, format, title, language, path = "undefined") {
+        this.index = index;
         this.format = format;
+        this.title = title;
         this.language = language;
+        this.path = path;
     }
 };
 
 export class playData {
-    constructor(video, audio, subtitle) {
+    constructor(video, audio, subtitle, path, size, duration) {
         this.video = video;
         this.audio = audio;
         this.subtitle = subtitle;
+        this.path = path;
+        this.size = size;
+        this.duration = duration;
+        this.path = path;
     }
 }
 

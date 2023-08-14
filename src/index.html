@@ -71,16 +71,19 @@
     <video
       id="video"
       class="video-js"
-      data-setup="{}"
-      preload="true"
+      data-setup="{'html5': {
+        nativeTextTracks: false
+    }}"
+      preload="false"
       src=""
     >
+    <track src="/home/mak/.config/AVP/subtitles/0_undefined_FilmKio.com0.srt" kind="captions" srclang="en" label="English" default="">
     </video>
 
     <audio
       id="audio"
       data-setup="{}"
-      preload="true"
+      preload="false"
       src=""
     >
     </audio>
