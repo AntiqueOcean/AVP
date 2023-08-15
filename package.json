@@ -20,6 +20,7 @@
   "author": "AntiqueOcean_Muhammad_Ali_Kalantari",
   "license": "GPL-3.0-or-later",
   "dependencies": {
+    "@rajesh896/video-thumbnails-generator": "^2.3.9",
     "electron-squirrel-startup": "^1.0.0",
     "ffmpeg-static": "^5.1.0",
     "ffprobe": "^1.1.2",

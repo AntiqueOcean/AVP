@@ -17,7 +17,7 @@ import * as menu from './menus.js';
 const { dialog, electron, ipcRenderer } = require('electron');
 const path = require('path');
 const fs = require('fs');
-
+const vThumb = require('@rajesh896/video-thumbnails-generator');
 /* ------------- ----------- ------------- */
 /* ------------- [variables] ------------- */
 /* ------------- ----------- ------------- */
@@ -69,10 +69,11 @@ var checkIfVideoIsPlayingTime = 0;
 
 
 //Audio control variables
+var hasSound = false;
 var lastVolume = 25;
 var audioCheck = 2000;
 var autoSync = config.autoSync;
-var syncAmount = 0.15;
+var syncAmount = 0.25;
 var audioExtractProcess = null;
 
 //Subtitle control variables
@@ -81,8 +82,8 @@ var subtitleExtractProcess = null;
 //play control
 
 var metadata;
-const currentPlayData = new basic.playData;
-var initExtractionRuningProcesses = 2;
+var currentPlayData = new basic.playData;
+var initExtractionRuningProcessesCount = 2;
 var mediaLoadUpInterval = null;
 
 //windows
@@ -183,11 +184,12 @@ mainPlayer.addEventListener("dragover", function(event) {
 
 function init() {
     setVolume(config.volume);
-    audio.controls = false;
     video.muted = true;
+
     if (config.open_last) {
         loadVideo(config.last_path);
     }
+
     // temp
     if (!config.temp_popup)
         document.getElementById("donationPopUp").style.display = "none";
@@ -196,7 +198,6 @@ function init() {
 } 
 
 function safeClose() {
-    config.volume = Math.round(audio.volume*100);
     if (video.readyState == 4)
         config.last_path = currentPath;
     addCurrentToHistory();
@@ -204,7 +205,9 @@ function safeClose() {
     basic.updateConfigFile(config);
     if (previewGenerationProcess != null)
         previewGenerationProcess.kill();
-    setInterval (() => {window.close();}, 250);
+    setTimeout (() => {
+        ipcRenderer.send("quitWindow");
+    }, 250);
 }
 
 function toggleFullscreen(e){
@@ -266,26 +269,33 @@ function getSubtitleFormat(input) {
     return input;
 }
 var _validateStreamsInterval = null;
-var diff;
-var initExportRanOnce = false;
-function loadMetadata(input) {
-    diff = Date.now() 
 
+var initExportRanOnce = false;
+function loadMetadata(_input) {
     metadata = null;
-    basic.ffmpeg(input).ffprobe(function(err, _metadata_) {
+    delete currentPlayData.video;
+    delete currentPlayData.audio;
+    delete currentPlayData.subtitle;
+
+    basic.ffmpeg(_input).ffprobe(function(err, _metadata_) {
         metadata = _metadata_;
+        console.log(metadata);
     });
 
-
     clearInterval(_validateStreamsInterval);
+
     initExportRanOnce = false;
     setTimeout(() => {
         _validateStreamsInterval = setInterval(() => {
             if (metadata != null && !initExportRanOnce) {
-                console.log(metadata);
-                currentPlayData.video = [];
-                currentPlayData.audio = [];
-                currentPlayData.subtitle = [];
+                currentPlayData = new basic.playData(new Array(), new Array(), new Array(), metadata.format.filename, metadata.format.size, metadata.format.duration);
+                // currentPlayData.path = metadata.format.filename;
+                // currentPlayData.size = metadata.format.size;
+                // currentPlayData.duration = metadata.format.duration;
+
+                // currentPlayData.video = [];
+                // currentPlayData.audio = [];
+                // currentPlayData.subtitle = [];
                 
                 for (var i = 0; i < metadata.streams.length; i++) {
                     if (metadata.streams[i].codec_type == "video") {
@@ -298,10 +308,15 @@ function loadMetadata(input) {
                         currentPlayData.subtitle.push(new basic.subtitileData(metadata.streams[i].index, metadata.streams[i].codec_name, metadata.streams[i].tags.title, metadata.streams[i].tags.language));
                     }
                 }
-    
+
+                if (currentPlayData.audio.length > 0)
+                    hasSound = true;
+                else
+                    hasSound = false;
+
                 //start of audio and subtitle extraction
-                initExtractionRuningProcesses = 2;
-    
+                initExtractionRuningProcessesCount = currentPlayData.audio.length + currentPlayData.subtitle.length ;
+
                 if (audioExtractProcess != null)
                     audioExtractProcess.kill();
                 if (subtitleExtractProcess != null)
@@ -309,36 +324,39 @@ function loadMetadata(input) {
     
                 audioExtractProcess = null;
                 subtitleExtractProcess = null;
-    
-                if (currentPlayData.audio.length != 0) {
-                    removeFilesFromDirectory("audiotracks");
-                    var _audioExtractcode = "audioExtractProcess = basic.ffmpeg().input(input)";
+                removeFilesFromDirectory("audiotracks");
+                if ((currentPlayData.audio.length > 0 && config.extractAudio) || (currentPlayData.audio.length == 1 && config.singleAudioExport && config.extractAudio)) {
+                    var _audioExtractcode = "audioExtractProcess = basic.ffmpeg().input(_input)";
                     for (var i = 0; i < currentPlayData.audio.length; i++) {
-                        const _outputPath = localPath + "/audiotracks/" + i + "_" + currentPlayData.audio[i].language + "_" + "." + currentPlayData.audio[i].format;
+                        const _outputPath = localPath + "/audiotracks/" + i + "_" + currentPlayData.audio[i].language + "_" + currentPlayData.audio[i].title + path.parse(currentPath).name + "." + currentPlayData.audio[i].format;
                         _audioExtractcode += `.saveToFile("${_outputPath}").outputOption("-map", "0:a:${i}").outputOption("-c", "copy")`;
                         currentPlayData.audio[i].path = _outputPath;
                     }
                     _audioExtractcode += `.on("end", () => {
-                        initExtractionRuningProcesses--;
+                        initExtractionRuningProcessesCount--;
                     });`;
                     eval(_audioExtractcode);
                 } else {
-                    initExtractionRuningProcesses--;
+                    if (currentPlayData.audio.length == 1 || (currentPlayData.audio.length != 0 && !config.extractAudio))
+                        currentPlayData.audio[0].path = _input;
+                    for (var i = 0; i < currentPlayData.audio.length; i++)
+                        initExtractionRuningProcessesCount--;
                 }
-    
                
                 if (currentPlayData.subtitle.length != 0) {
                     removeFilesFromDirectory("subtitles");
-                    var _subtitleExtractCode = "subtitleExtractProcess = basic.ffmpeg().input(input)";
+                    var _subtitleExtractCode = "subtitleExtractProcess = basic.ffmpeg().input(_input)";
                     for (var i = 0; i < currentPlayData.subtitle.length; i++) {
                         _subtitleExtractCode += `.saveToFile(localPath + "/subtitles/${i + "_" + currentPlayData.subtitle[i].language + "_" + currentPlayData.subtitle[i].title}.${getSubtitleFormat(currentPlayData.subtitle[i].format)}").outputOption("-map", "0:s:${i}").outputOption("-c", "copy")`;
                     }
                     _subtitleExtractCode += `.on("end", () => {
-                        initExtractionRuningProcesses--;
+                        initExtractionRuningProcessesCount--;
                     });`;
                     eval(_subtitleExtractCode);
                 } else {
-                    initExtractionRuningProcesses--;
+                    for (var i = 0; i < currentPlayData.subtitle.length; i++)
+                        initExtractionRuningProcessesCount--;
+
                 }
     
                 // end of audio and subtitle extraction
@@ -352,7 +370,7 @@ function loadMetadata(input) {
 }
 
 function refreshDirectory() {
-    if (currentDirectory != lastDirectory) {
+    if (currentDirectory != lastDirectory && fs.existsSync(currentPath)) {
         fileList = [];
         lastDirectory = currentDirectory;
         fs.readdir(currentDirectory, function(err, _files) {
@@ -534,8 +552,8 @@ function setNewTime(input) {
       settingTime = input;
     }
     video.currentTime = settingTime;
-    audio.currentTime = settingTime;
     currentTime = settingTime;
+    syncAudio();
 }
   
   function updateTimerUi(input){
@@ -585,7 +603,7 @@ function tick() {
             playNext(true);
     }
     audioCheck -= tickRate;
-    if(autoSync)
+    if(autoSync && audio != null)
     if ((audioCheck <= 0) && (video.currentTime - audio.currentTime + (config.audioDelayAmount/1000) >= syncAmount)) {
         syncAudio();
         audioCheck = 2000;
@@ -601,35 +619,33 @@ function tick() {
 
 function removeFilesFromDirectory(input) {
     fs.readdir(localPath + "/" + input, (err, files) => {
-      
         for (const file of files) {
-          fs.unlink(path.join(localPath + "/" + input, file), () => {});
+                fs.unlink(path.join(localPath + "/" + input, file), () => {});
         }
       });
 }
-function generatePreview(input){
-    if (previewGenerationProcess != null)
-        previewGenerationProcess.kill();
-    if (config.showPreview) {
-    isPreviewReady = false;
-    const previewStep = 0.05;
-    previewArrayLength = Math.round(video.duration * previewStep);
-    previewImage.setAttribute ("src", "Styles/images/loadingPreview.jpg");
-    removeFilesFromDirectory("preview");
-      previewGenerationProcess = basic.ffmpeg().input(input).outputOption('-r', previewStep).saveToFile(localPath + '/preview/%003d.jpg').on('progress', function(progress){
-        fs.readdir(localPath + "/preview", function(err, _files) {
-                previewArray = [];
-                _files.forEach(_file => {
-                    if (_file)
-                        previewArray.push(localPath + "/preview/" + _file);
-                });
-        });
 
-
+var GetFileBlobUsingURL = function (url, convertBlob) {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", url);
+    xhr.responseType = "blob";
+    xhr.addEventListener('load', function() {
+        convertBlob(xhr.response);
     });
-  
-}
-}
+    xhr.send();
+};
+
+var blobToFile = function (blob, name) {
+    blob.lastModifiedDate = new Date();
+    blob.name = name;
+    return blob;
+};
+
+var GetFileObjectFromURL = function(filePathOrUrl, convertBlob) {
+   GetFileBlobUsingURL(filePathOrUrl, function (blob) {
+      convertBlob(blobToFile(blob, path.parse(filePathOrUrl).base));
+   });
+};
 
 var updateBarMouseUpInterval;
 function updateBar() {
@@ -647,51 +663,69 @@ function setNewTimeEnd(){
 /* ***** [Functions] ***** */
 /* Video Control Functions */
 
-function getPreviewByPercent(input) {
-    const _file = previewArray[Math.round(previewArrayLength/100*input)];
-    if (fs.existsSync(_file)) 
-        return _file;
-    else {
-        return "Styles/images/loadingPreview.jpg";
+ipcRenderer.on("main_generatedPreviewResult", (event, array) => {
+    previewArray = array;
+});
 
-    }
+function getPreviewByPercent(input) {
+    if (previewArray.length != 0)
+        return previewArray[Math.min(Math.round(previewArray.length/100*input), previewArray.length-1)];
+    return "Styles/images/loadingPreview.jpg";
 }
 
 function loadVideo(input, reset_current = false) {
-
     if(video.readyState === 4) 
         addCurrentToHistory(!reset_current);
+
     currentPath = input;
     currentDirectory = path.parse(currentPath).dir;
     refreshDirectory();
-
     video.setAttribute("src", input);
 
     checkIfVideoIsPlaying = true;
     checkIfVideoIsPlayingTime = 2000;
-    loadMetadata(input);
-    if (mediaLoadUpInterval != null)
-        clearInterval(mediaLoadUpInterval);
-    mediaLoadUpInterval = setInterval(function() {
-        if (initExtractionRuningProcesses == 0) {
-            console.log("took: " + ((Date.now() - diff)/1000) + "s");
-            // const _srt = basic.srt.fromSrt(fs.readFileSync("/home/mak/.config/AVP/subtitles/0_undefined_FilmKio.com.srt"));
-            // console.log(_srt);
-            alert(currentPlayData.audio[0].path);
-            audio.setAttribute("src", currentPlayData.audio[0].path);
-            clearInterval(mediaLoadUpInterval);
-            mediaLoadUpInterval = null;
-        }
-    }, 10);
-    // when the first frame of video is rendered
-    // meaning the video is playon and is valid
+
     video.onloadeddata = function() {
-        // video is loaded and there is no need to check for validation anymore
-        // this process happens in tick function
+
         checkIfVideoIsPlaying = false;
 
-        // checks if option [open_as_left] is enabled, then gets last
-        // time it was playing from history and sets the newtime to that
+        if (config.showPreview) {
+            previewArray = [];
+            ipcRenderer.invoke("generatePreview", input, video.duration / config.previewStep);
+        } else {
+            previewImage.style.display = "none";
+        }
+
+
+        if (mediaLoadUpInterval != null)
+            clearInterval(mediaLoadUpInterval);
+
+        loadMetadata(input);
+
+        mediaLoadUpInterval = setInterval(function() {
+            console.log(initExtractionRuningProcessesCount);
+            if (initExtractionRuningProcessesCount == 0) {
+                if (hasSound && currentPlayData.audio != null && currentPlayData.audio.length > 0) {
+                    if(fs.existsSync(currentPlayData.audio[0].path)) {
+                        loadAudio(currentPlayData.audio[0].path);
+                        if (config.autoPlay)
+                            forcePlay();
+                        console.log("asdasddsa")
+                        clearInterval(mediaLoadUpInterval);
+                        mediaLoadUpInterval = null;
+                }}
+                else if (!hasSound) {
+                    basic.addNotification("🔇 current media has no audio tracks", 3000);
+                    loadAudio("");
+                    if (config.autoPlay)
+                        forcePlay();
+                    clearInterval(mediaLoadUpInterval);
+                    mediaLoadUpInterval = null;
+                }
+                
+            }
+        }, 50);
+
         if (config.open_as_left) {
 
             const _time_ = getFromHistory(input);
@@ -699,26 +733,14 @@ function loadVideo(input, reset_current = false) {
                 setNewTime(_time_);
         }
 
-        // makes sure that the video plays immidiatly after load
-        // (if the option [autoplay] is enabled)
-        //if (config.autoPlay) 
-            //forcePlay();
-        
-        // adds notification, stating that the current video is playing
         basic.addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, undefined, function(){
             basic.removeNotificationById("notif_videoTitle");
         });
         
-
-
-        // set window size accordong to video
         const _newHeight = topBar.getBoundingClientRect().height + bottomBar.getBoundingClientRect().height + basic.range(video.videoHeight, 0, window.screen.height-40);
         ipcRenderer.invoke("setWindowSize", basic.range(video.videoWidth, 0, window.screen.width-80), _newHeight);
 
-        // generates preview (if the option is enabled)
-        generatePreview(input);
 
-        // updates all (including ui, ...)
         updateAll();
     }
 }
@@ -778,20 +800,25 @@ function switchPlayPause() {
 }
 
 function forcePlay() {
+
         video.play();
-        audio.play();
-        audio.currentTime = video.currentTime + (config.audioDelayAmount/1000);
-    if (video.readyState == 4) {
+        if (hasSound) {
+            syncAudio();
+            audio.play();
+        }
         basic.addNotification("⏯️ Playing", 1000, true, "playState", "var(--alt-color-green)",  `onclick="removeNotificationById(this.id)"`);
-    }
+    
 }
 
 function forcePause() {
-    if (video.readyState == 4) {
+
         video.pause();
-        audio.pause();
+        if (hasSound) {
+            syncAudio();
+            audio.pause();
+        }
         basic.addNotification("⏯️ Paused", 1000, true, "playState", "var(--alt-color-red)",  `onclick="removeNotificationById(this.id)"`);
-    }
+    
 }
 
 function forwardSeconds(_sec = forwardingSeconds) {
@@ -853,13 +880,25 @@ function playPrevious() {
 /* ****** [Functions] ***** */
 /* Audio Control Functions */
 
-function syncAudio() {
-    audio.currentTime = video.currentTime + (config.audioDelayAmount/1000);
+function loadAudio(input) {
+    audio.setAttribute("src", input);
+    if (!video.paused) {
+        syncAudio();
+        audio.play();
+    }
 }
+
+function syncAudio() {
+    if (audio != null) {
+        const _pos = video.currentTime// + (config.audioDelayAmount/1000);
+        audio.currentTime = _pos;
+    }
+}
+
 function updateVolumeUi(){
-    volumeBar.style.width = (audio.volume*100) + "%";
-    volumeNumberInput.value = Math.round(audio.volume * 100);
-    if (audio.volume == 0) 
+    volumeBar.style.width = (config.volume) + "%";
+    volumeNumberInput.value = config.volume;
+    if (config.volume == 0) 
         muteButton.style.setProperty("--image", "url(svg/audioOff.svg)");
     else 
         muteButton.style.setProperty("--image", "url(svg/audioOn.svg)");
@@ -872,7 +911,10 @@ function setVolume(input) {
         _input = 100;
     else if (input < 0) 
         _input = 0;
-    audio.volume = _input/100;
+    config.volume = _input;
+    if (audio != null)
+        audio.volume = config.volume/100;
+
     if (_input != 0)
         basic.addNotification("🔈" + Math.round(_input) + "%", 1000, true, "volumechange");
     else {
@@ -890,7 +932,7 @@ function setVolumeFromBar(event) {
     var width = (poistion / volumeBarBg.getBoundingClientRect().width) * 100;
     if (width < 10) {
         width = 0;
-        lastVolume = Math.round(audio.volume * 100);
+        lastVolume = config.volume;
     }
     else if (width > 90)
         width = 100;
@@ -900,10 +942,10 @@ function setVolumeFromBar(event) {
 function setVolumeFromMouseWheel(event) {
     var _amount = 2;
     var _direction = -1;
-    var _current = audio.volume;
+    var _current = config.volume;
     if (event.deltaY < 0)
     _direction = 1;
-    setVolume((_current * 100)+(_amount*_direction));
+    setVolume((_current)+(_amount*_direction));
 }
 
 function setVolumeFromInput() {
@@ -912,12 +954,12 @@ function setVolumeFromInput() {
 
 
 function toggleMute(){
-    if (audio.volume === 0 && lastVolume != 0)
+    if (config.volume === 0 && lastVolume != 0)
         setVolume(lastVolume);
-    else if (audio.volume == 0 && lastVolume == 0)
+    else if (config.volume == 0 && lastVolume == 0)
         setVolume(25);
     else {
-        lastVolume = Math.round(audio.volume * 100);
+        lastVolume = config.volume;
         setVolume(0);
     }    
 }
@@ -956,10 +998,10 @@ window.onkeydown = function(event) {
             backwardSeconds();
         }
         else if (basic.isKey(code, key.volumeUp)) {
-            setVolume(audio.volume*100+2);
+            setVolume(config.volume+2);
         }
         else if (basic.isKey(code, key.volumeDown)) {
-            setVolume(audio.volume*100-2);
+            setVolume(config.volume-2);
         }
         else if (basic.isKey(code, key.mute)) {
             toggleMute();
@@ -1216,6 +1258,8 @@ var openVideoMenuItem00;
 var openVideoMenuItem01;
 var openVideoMenuItems;
 var openVideoMenuList;
+var audioMenuItems;
+var audioMenuList;
 var mainMenuButton00;
 var mainMenuButton01;
 var mainMenuButton02;
@@ -1236,10 +1280,14 @@ function updateMainContextMenu() {
         console.log(streams[0]);
     }, undefined, "manuLoadUrl");
     updateRecentItems();
+    updateAudioTrackItems();
     openVideoMenuItems = [openVideoMenuItem00, openVideoMenuItem01, recentMenuList];
     openVideoMenuList = new menu.listItem("item", false, "open", "--tag:'📁'", "click", function(){
         fileSelectButton.click();
     }, openVideoMenuItems, "openVIdeoMainMenu");
+
+    audioMenuItems = [audioTracksMenuList];
+    audioMenuList = new menu.listItem("item", false, "audio", "--tag:'📢'", "", null, audioMenuItems, "audioMainMenu");
 
     mainMenuButton00 = new menu.listItem("button", false, "", "--image:url(svg/previous.svg)", "click", function(){
         playPrevious();
@@ -1259,7 +1307,7 @@ function updateMainContextMenu() {
     mainMenuItem01 = new menu.listItem("item", false, "settings", "--tag:'⚙️'", "click", function() {
         openSettings();
     }, undefined, "mainMenuSettings");
-    mainMenuItems = [mainMenuButtonGroup01, mainMenuLine00, openVideoMenuList, selectThemeMenuList,  mainMenuItem01];
+    mainMenuItems = [mainMenuButtonGroup01, mainMenuLine00, openVideoMenuList, audioMenuList, selectThemeMenuList,  mainMenuItem01];
 
     mainMenuList = new menu.listItem("item", true, "main", "", "", undefined, mainMenuItems, "mainMenu");
 }
@@ -1276,6 +1324,18 @@ function updateRecentItems() {
     }
     recentMenuList = new menu.listItem("item", false, "recent", "--tag:'📄'", "", undefined, recentMenuItems, "mainMenuRecent");
 } updateRecentItems();
+
+var audioTracksMenuList;
+function updateAudioTrackItems() {
+    var audioTracksItems = [];
+    for (var i = 0; i < currentPlayData.audio.length; i++) {
+        const _path = currentPlayData.audio[i].path;
+        audioTracksItems[i] = new menu.listItem("item", false, '[' + currentPlayData.audio[i].language + "] " + currentPlayData.audio[i].title, "--tag:'" + (i+1) + "'", "click", () => {
+            loadAudio(_path);
+        }, undefined, "audio_"+i);
+    }
+    audioTracksMenuList = new menu.listItem("item", false, "tracks", "--tag:'🎵'", "", undefined, audioTracksItems, "mainMenuAudioTracks");
+}
 
 listen.addListener("mainCloseButton", "click", function() {
     safeClose();
@@ -1356,6 +1416,7 @@ listen.addListener("fileSelectButton", "click", function(e) {
             loadVideo(barFileSelectInput.files[0].path);
             barFileSelectInput.value = "";
             clearInterval(fileValueInterval);
+
         }
     }, tickRate);
 }, ["!event"])

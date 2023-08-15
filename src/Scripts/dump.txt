@@ -1,0 +1,22 @@
+
+    if (previewGenerationProcess != null)
+        previewGenerationProcess.kill();
+    if (config.showPreview) {
+    isPreviewReady = false;
+    const previewStep = 0.05;
+    previewArrayLength = Math.round(video.duration * previewStep);
+    previewImage.setAttribute ("src", "Styles/images/loadingPreview.jpg");
+    removeFilesFromDirectory("preview");
+      previewGenerationProcess = basic.ffmpeg().input(input).outputOption('-r', previewStep).saveToFile(localPath + '/preview/%003d.jpg').on('progress', function(progress){
+        fs.readdir(localPath + "/preview", function(err, _files) {
+                previewArray = [];
+                _files.forEach(_file => {
+                    if (_file)
+                        previewArray.push(localPath + "/preview/" + _file);
+                });
+        });
+
+
+    });
+  
+}

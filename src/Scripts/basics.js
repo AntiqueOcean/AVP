@@ -10,7 +10,7 @@ export const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegStatic);
 ffmpeg.setFfprobePath(ffprobeStatic.path);
 
-
+export const {Howl, Howler} = require('howler');
 
 const { ipcRenderer } = require('electron');
 const localPath = ipcRenderer.sendSync("getLocalPath");
@@ -263,9 +263,14 @@ export class playData {
         this.path = path;
         this.size = size;
         this.duration = duration;
-        this.path = path;
     }
 }
 
 
+export function setAudioSrc(input) {
+    let self = this;
+    self.unload();
+    self._src = input;
+    self.load();
+}
 

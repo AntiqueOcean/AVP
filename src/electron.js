@@ -40,7 +40,9 @@ const configDefaultContent = `
   "audioDelayAddingAmount":50,
   "autoSync":true,
   "showPreview":true,
-  "previewStep":0.05},
+  "previewStep":0.05,
+  "extractAudio":false,
+  "singleAudioExport":false},
   {
   }]
 `;
@@ -95,6 +97,8 @@ if (require('electron-squirrel-startup')) {
 }
 
 var win;
+var background_process_win;
+
 app.on('ready', () => { 
   const _path = app.getPath('userData');
   if (!fs.existsSync(_path)) {
@@ -145,10 +149,26 @@ app.on('ready', () => {
       webPreferences: {
         enableRemoteModule: true,
         nodeIntegration: true,
+        nodeIntegrationInWorker: true,
         preload: path.join(__dirname, 'preload.js'),
         contextIsolation: false
         }  
     })
+
+      background_process_win = new BrowserWindow({
+      width: 320,
+      height: 320,
+      nodeIntegration: true,
+      transparent:false,
+      show: false,
+      webPreferences: {
+        enableRemoteModule: true,
+        nodeIntegration: true,
+        contextIsolation: false
+        }  
+    })
+
+
     ipcMain.on("toggleMaximize", function(event) {
       if(win.isMaximized()) {
         win.unmaximize();
@@ -187,8 +207,25 @@ app.on('ready', () => {
     });
 
     ipcMain.handle("setWindowSize", async(event, width, height) => {
-      win.setSize(width, height);;
+      win.setSize(width, height);
     });
+
+    ipcMain.on("quitWindow", (event) => {
+      app.quit();
+    });
+
+    ipcMain.handle("generatePreview", async(event, input, length) => {
+      background_process_win.send("bg_generatePreview", input, length);
+  });
+
+    ipcMain.handle("generatedPreviewResult", async(event, array) => {
+      win.send("main_generatedPreviewResult", array);
+  });
+  
+    background_process_win.loadFile(path.join(__dirname, 'background_process.html'));
+    //background_process_win.webContents.openDevTools();
+    //background_process_win.show();
+
 
     win.webContents.openDevTools();
     win.setMenu(null);
@@ -229,8 +266,8 @@ app.on('activate', () => {
 });
 
 
-function windowQuit() {
-  window.close();
+function quit() {
+  app.quit();
 }
 
 function windowMaximize() {
