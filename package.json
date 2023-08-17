@@ -29,10 +29,12 @@
     "howler": "^2.2.3",
     "jquery": "^3.7.0",
     "rpmbuild": "^0.0.23",
+    "soundjs": "^1.0.1",
     "srt-parser-2": "^1.2.3",
     "subtitle": "^4.2.1",
     "update-electron-app": "^2.0.1",
-    "videojs-youtube": "^3.0.1"
+    "videojs-youtube": "^3.0.1",
+    "vlc-player": "^2.0.0"
   },
   "devDependencies": {
     "@electron-forge/cli": "^6.2.1",

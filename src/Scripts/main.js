@@ -17,7 +17,9 @@ import * as menu from './menus.js';
 const { dialog, electron, ipcRenderer } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const vThumb = require('@rajesh896/video-thumbnails-generator');
+const { Howl } = require ('howler');
+// const { soundjs } = require ('soundjs')
+
 /* ------------- ----------- ------------- */
 /* ------------- [variables] ------------- */
 /* ------------- ----------- ------------- */
@@ -36,7 +38,7 @@ const key = JSON.parse(fs.readFileSync(localPath + "/input.json"))[0];
 // input variables
 var pausingControl = false;
 var inputingTime = false;
-var fileValueInterval;
+var selectedFileReturnValueInterval;
 
 
 // global ui variables
@@ -56,7 +58,7 @@ var currentInputElement = null;
 // video control variables
 var currentDuration = 0;
 var currentTime = 0;
-var playing = false;
+var playing = 0;
 var timebarMouseX;
 var forwardingSeconds = config.forwarding_time;
 var currentPath = "none";
@@ -69,6 +71,7 @@ var checkIfVideoIsPlayingTime = 0;
 
 
 //Audio control variables
+var audio = null;
 var hasSound = false;
 var lastVolume = 25;
 var audioCheck = 2000;
@@ -114,7 +117,7 @@ var fileTitle = document.getElementById("fnameTitle");
 var editCheck = document.getElementById("editCheck");
 
 //Audio control elements
-var audio = document.getElementById("audio");
+// var audio = document.getElementById("audio");
 var volumeBar = document.getElementById("volumeBar");
 var volumeBarBg = document.getElementById("volumeBarBg");
 var volumeController = document.getElementById("volumeController");
@@ -293,9 +296,9 @@ function loadMetadata(_input) {
                 // currentPlayData.size = metadata.format.size;
                 // currentPlayData.duration = metadata.format.duration;
 
-                // currentPlayData.video = [];
-                // currentPlayData.audio = [];
-                // currentPlayData.subtitle = [];
+                currentPlayData.video = [];
+                currentPlayData.audio = [];
+                currentPlayData.subtitle = [];
                 
                 for (var i = 0; i < metadata.streams.length; i++) {
                     if (metadata.streams[i].codec_type == "video") {
@@ -329,7 +332,7 @@ function loadMetadata(_input) {
                     var _audioExtractcode = "audioExtractProcess = basic.ffmpeg().input(_input)";
                     for (var i = 0; i < currentPlayData.audio.length; i++) {
                         const _outputPath = localPath + "/audiotracks/" + i + "_" + currentPlayData.audio[i].language + "_" + currentPlayData.audio[i].title + path.parse(currentPath).name + "." + currentPlayData.audio[i].format;
-                        _audioExtractcode += `.saveToFile("${_outputPath}").outputOption("-map", "0:a:${i}").outputOption("-c", "copy")`;
+                        _audioExtractcode += `.saveToFile("${_outputPath}").outputOption("-map", "0:a:${i}?").outputOption("-c", "copy")`;
                         currentPlayData.audio[i].path = _outputPath;
                     }
                     _audioExtractcode += `.on("end", () => {
@@ -581,16 +584,20 @@ function updateTimeStamp(event) {
 
 var tickInterval = setInterval(tick, tickRate);
 function tick() {
-    playing = !video.paused;
+    if (playing != 3 && video.readyState == 4)
+        playing = + !video.paused;
     if (cursoHideTimer <= 0 && mainWin.style.cursor != "none" && fullScreenState)
         mainWin.style.cursor = "none";
     else if (fullScreenState)
         cursoHideTimer -= tickRate;
 
-    if (playing)
+    if (playing == 1)
         playButton.style.setProperty ("--image", "url(svg/pause.svg)");
-    else
+    else if (playing == 0)
         playButton.style.setProperty ("--image", "url(svg/play.svg)");
+    else if (playing == 3) {
+        playButton.style.setProperty ("--image", "url(svg/loading.svg)");
+    }
     currentTime = video.currentTime;
     updateTimerUi();
     basic.handleNotifications(tickRate);
@@ -602,9 +609,10 @@ function tick() {
         else if (config.autoPlayNext)
             playNext(true);
     }
+
     audioCheck -= tickRate;
     if(autoSync && audio != null)
-    if ((audioCheck <= 0) && (video.currentTime - audio.currentTime + (config.audioDelayAmount/1000) >= syncAmount)) {
+    if ((audioCheck <= 0) && (video.currentTime - audio.seek() + (config.audioDelayAmount/1000) >= syncAmount)) {
         syncAudio();
         audioCheck = 2000;
     }
@@ -676,11 +684,15 @@ function getPreviewByPercent(input) {
 function loadVideo(input, reset_current = false) {
     if(video.readyState === 4) 
         addCurrentToHistory(!reset_current);
-
+    playing = 3;
+    if (audio != null) {
+        audio.stop();
+        audio.unload();
+    }
     currentPath = input;
     currentDirectory = path.parse(currentPath).dir;
     refreshDirectory();
-    video.setAttribute("src", input);
+    video.src = input;
 
     checkIfVideoIsPlaying = true;
     checkIfVideoIsPlayingTime = 2000;
@@ -703,20 +715,20 @@ function loadVideo(input, reset_current = false) {
         loadMetadata(input);
 
         mediaLoadUpInterval = setInterval(function() {
-            console.log(initExtractionRuningProcessesCount);
             if (initExtractionRuningProcessesCount == 0) {
                 if (hasSound && currentPlayData.audio != null && currentPlayData.audio.length > 0) {
                     if(fs.existsSync(currentPlayData.audio[0].path)) {
-                        loadAudio(currentPlayData.audio[0].path);
+                        playing = 0;
+                        loadAudio(currentPlayData.audio[0]);
                         if (config.autoPlay)
                             forcePlay();
-                        console.log("asdasddsa")
                         clearInterval(mediaLoadUpInterval);
                         mediaLoadUpInterval = null;
                 }}
                 else if (!hasSound) {
+                    playing = 0;
                     basic.addNotification("🔇 current media has no audio tracks", 3000);
-                    loadAudio("");
+                    loadAudio(null);
                     if (config.autoPlay)
                         forcePlay();
                     clearInterval(mediaLoadUpInterval);
@@ -788,7 +800,7 @@ function quitCurrentAction() {
 }
 
 function switchPlayPause() {
-    if (video != "undefined")
+    if (video != "undefined" && playing != 3)
     {
         if (video.paused) {
             forcePlay();
@@ -802,7 +814,8 @@ function switchPlayPause() {
 function forcePlay() {
 
         video.play();
-        if (hasSound) {
+        if (hasSound && audio != null) {
+            audio.pause();
             syncAudio();
             audio.play();
         }
@@ -813,8 +826,7 @@ function forcePlay() {
 function forcePause() {
 
         video.pause();
-        if (hasSound) {
-            syncAudio();
+        if (hasSound && audio != null) {
             audio.pause();
         }
         basic.addNotification("⏯️ Paused", 1000, true, "playState", "var(--alt-color-red)",  `onclick="removeNotificationById(this.id)"`);
@@ -881,17 +893,29 @@ function playPrevious() {
 /* Audio Control Functions */
 
 function loadAudio(input) {
-    audio.setAttribute("src", input);
-    if (!video.paused) {
-        syncAudio();
-        audio.play();
+    if (audio != null) {
+        audio.pause();
+        audio.unload();
+    }
+    if (input != null)
+    if (fs.existsSync(input.path)) {
+        console.log(input.path);
+        audio = new Howl({
+            src: input.path,
+            html5: true     
+        });
+        audio.load();
+        if (!video.paused) {
+            syncAudio();
+            audio.play();
+        }
     }
 }
 
 function syncAudio() {
     if (audio != null) {
-        const _pos = video.currentTime// + (config.audioDelayAmount/1000);
-        audio.currentTime = _pos;
+        const _pos = video.currentTime + (config.audioDelayAmount/1000);
+        audio.seek(_pos);
     }
 }
 
@@ -1105,15 +1129,11 @@ window.onkeydown = function(event) {
         else if (basic.isKey(code, key.delayAudioBackward)) {
             config.audioDelayAmount -= config.audioDelayAddingAmount;
             syncAudio();
-            if (config.audioDelayAmount == 0)
-                audio.currentTime = video.currentTime ;
             basic.addNotification("Audio Delay: " + config.audioDelayAmount , 1000, true, "audioDelay");
         }
         else if (basic.isKey(code, key.delayAudioForward)) {
             config.audioDelayAmount += config.audioDelayAddingAmount;
             syncAudio();
-            if (config.audioDelayAmount == 0)
-                audio.currentTime = video.currentTime ;
             basic.addNotification("Audio Delay: " + config.audioDelayAmount , 1000, true, "audioDelay");
         }
     }
@@ -1329,9 +1349,9 @@ var audioTracksMenuList;
 function updateAudioTrackItems() {
     var audioTracksItems = [];
     for (var i = 0; i < currentPlayData.audio.length; i++) {
-        const _path = currentPlayData.audio[i].path;
+        const _item = currentPlayData.audio[i];
         audioTracksItems[i] = new menu.listItem("item", false, '[' + currentPlayData.audio[i].language + "] " + currentPlayData.audio[i].title, "--tag:'" + (i+1) + "'", "click", () => {
-            loadAudio(_path);
+            loadAudio(_item);
         }, undefined, "audio_"+i);
     }
     audioTracksMenuList = new menu.listItem("item", false, "tracks", "--tag:'🎵'", "", undefined, audioTracksItems, "mainMenuAudioTracks");
@@ -1364,11 +1384,13 @@ listen.addListener("playButton", "click", function() {
 });
 
 navigator.mediaSession.setActionHandler('play', function() {
-    forcePlay();
+    if (playing != 3)
+        forcePlay();
 });
 
 navigator.mediaSession.setActionHandler('pause', function() {
-    forcePause();
+    if (playing != 3)
+        forcePause();
 });
 
 navigator.mediaSession.setActionHandler('previoustrack', function() {
@@ -1380,24 +1402,29 @@ navigator.mediaSession.setActionHandler('nexttrack', function() {
 });
 
 listen.addListener("previousButton", "click", function() {
+    this.blur();
     playPrevious();
 });
 
 listen.addListener("nextButton", "click", function() {
+    this.blur();
     playNext();
 });
 
 listen.addListener("forwardButton", "click", function() {
     this.blur();
-    forwardSeconds();
+    if (playing != 3)
+        forwardSeconds();
 });
 
 listen.addListener("timeInputForm", "submit", function() {
-    setTimeFromInput();
+    if (playing != 3)
+        setTimeFromInput();
 });
 
 listen.addListener("timerBarMiddle", "mousedown", function() {
-    updateBar();
+    if (playing != 3)
+        updateBar();
 });
 
 listen.addListener("mainWin", "drop", function(e) {
@@ -1411,11 +1438,11 @@ listen.addListener("fileAddressForm", "submit", function(e) {
 
 listen.addListener("fileSelectButton", "click", function(e) {
     barFileSelectInput.click();
-    fileValueInterval = setInterval(function() {
+    selectedFileReturnValueInterval = setInterval(function() {
         if (barFileSelectInput.value != "" && barFileSelectInput.value != null) {
             loadVideo(barFileSelectInput.files[0].path);
             barFileSelectInput.value = "";
-            clearInterval(fileValueInterval);
+            clearInterval(selectedFileReturnValueInterval);
 
         }
     }, tickRate);
@@ -1423,6 +1450,7 @@ listen.addListener("fileSelectButton", "click", function(e) {
 
 
 listen.addListener("timerBarMiddle", "mousemove", function(e) {
+    if (playing != 3)
     updateTimeStamp(e);
 }, ["!event"]);
 
@@ -1457,6 +1485,7 @@ listen.addListener("mainPlayer", "contextmenu", function(e) {
 }, ["!event"]);
 
 listen.addListener("mainPlayer", "dblclick", function(e) {
+    if (playing != 3)
     switchPlayPause();
 }, ["!event"]);
 
