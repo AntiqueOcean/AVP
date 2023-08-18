@@ -65,7 +65,7 @@ ipcRenderer.on("bg_generatePreview", (event, input, length = 20) => {
     generatePreview(input, length);
     const _localInterval2 = setInterval(() => {
         if (previewArray.length != 0){
-            play("done");
+            // play("done");
             ipcRenderer.invoke("generatedPreviewResult", previewArray);
             clearInterval(_localInterval2);
         }

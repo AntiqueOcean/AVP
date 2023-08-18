@@ -4,7 +4,7 @@
  */ -->
 
  <!DOCTYPE html>
-<html lang="en" class="theme-dark font-size-medium base-theme-essential">
+ <html class="theme-dark font-size-medium base-theme-essential">
 <head>
     <meta charset="UTF-8" />
     <title>Settings</title>
@@ -13,32 +13,32 @@
     <script src="Scripts/settings.js" type="module" defer></script>
 </head>
 <body>
-    <section class="settings">
+    <div class="settings">
         <div id="settingsTitlebar" class="title-bar">Settings</div>
         <div class="window">
             <div class="upper">
                 <div class="left">
-                    <button>Appearance</button>
-                    <button>Video</button>
-                    <button>Audio</button>
-                    <button>Subtitle</button>
+                    <button id="appearanceButton">Appearance</button>
+                    <button id="videoButton">Video</button>
+                    <button id="audioButton">Audio</button>
+                    <button id="subtitleButton">Subtitle</button>
                     <button id="inputButton">Input</button>
-                    <button>Cache</button>
-                    <button>Proxy</button>
+                    <button id="cacheButton">Cache</button>
+                    <button id="proxyButton">Proxy</button>
                     <hr style="width: 100%; border-color: var(--toolbar-background-color); margin: 0; margin-top: auto;"/>
                     <button onclick="alert('info');">about</button>
                 </div>
                 <div class="right">
-                    <div id="settingsContent"  class="content">
-
+                    <div id="content" class="content">
+                        
                     </div>
                 </div>
             </div>
             <div class="lower">
-                <button onclick="window.close()">close</button>
-                <button onclick="window.close()">apply</button>
+                <button id="close">close</button>
+                <button id="apply">apply</button>
             </div>
         </div>
-    </section>
+    </div>
 </body>
 </html>

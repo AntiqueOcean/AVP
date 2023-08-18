@@ -14,7 +14,9 @@ import * as listen from './listener.js';
 import * as menu from './menus.js';
 
 
-const { dialog, electron, ipcRenderer } = require('electron');
+const { app, BrowserWindow, electron, contextBridge,
+    ipcMain, ipcRenderer, dialog } = require('electron');
+
 const path = require('path');
 const fs = require('fs');
 const { Howl } = require ('howler');
@@ -61,7 +63,7 @@ var currentTime = 0;
 var playing = 0;
 var timebarMouseX;
 var forwardingSeconds = config.forwarding_time;
-var currentPath = "none";
+var currentPath = undefined;
 var currentDirectory = "";
 var lastDirectory = "none";
 var fileList = [];
@@ -117,12 +119,13 @@ var fileTitle = document.getElementById("fnameTitle");
 var editCheck = document.getElementById("editCheck");
 
 //Audio control elements
-// var audio = document.getElementById("audio");
+var webAudio = document.getElementById("audio");
 var volumeBar = document.getElementById("volumeBar");
 var volumeBarBg = document.getElementById("volumeBarBg");
 var volumeController = document.getElementById("volumeController");
 var volumeNumberInput = document.getElementById("volumeNumberInput");
 var muteButton = document.getElementById("muteButton");
+var useWebAudio = false;
 
 //other elements
 var tempMenuPlaceHolder = document.getElementById("currentTempMenu");
@@ -221,27 +224,7 @@ function toggleFullscreen(e){
 }
 
 function openSettings() {
-    const _width = 720;
-    const _height = 580;
-    var _posX = screen.width/2 - _width/2;
-    var _posY = screen.height/2 - _height/2;
-
-    settingsWindow = window.open('settings.html', '_blank', `
-    width=${_width},
-    height=${_height},
-    minWidth=${_width},
-    minHeight=${_height},
-    left=${_posX},
-    top=${_posY},
-    frame=false,
-    resizable=false,
-    alwaysOnTop=true,
-    webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false
-        }
-    `
-    );
+    ipcRenderer.invoke('openSettings', config);
 }
 
 function loadVideoFromInput() {
@@ -328,7 +311,8 @@ function loadMetadata(_input) {
                 audioExtractProcess = null;
                 subtitleExtractProcess = null;
                 removeFilesFromDirectory("audiotracks");
-                if ((currentPlayData.audio.length > 0 && config.extractAudio) || (currentPlayData.audio.length == 1 && config.singleAudioExport && config.extractAudio)) {
+                if ((currentPlayData.audio.length > 1 && config.extractAudio) || (currentPlayData.audio.length == 1 && config.singleAudioExport && config.extractAudio)) {
+                    console.log("why is this running")
                     var _audioExtractcode = "audioExtractProcess = basic.ffmpeg().input(_input)";
                     for (var i = 0; i < currentPlayData.audio.length; i++) {
                         const _outputPath = localPath + "/audiotracks/" + i + "_" + currentPlayData.audio[i].language + "_" + currentPlayData.audio[i].title + path.parse(currentPath).name + "." + currentPlayData.audio[i].format;
@@ -338,10 +322,15 @@ function loadMetadata(_input) {
                     _audioExtractcode += `.on("end", () => {
                         initExtractionRuningProcessesCount--;
                     });`;
+                    audio = null;
+                    useWebAudio = false;
                     eval(_audioExtractcode);
                 } else {
-                    if (currentPlayData.audio.length == 1 || (currentPlayData.audio.length != 0 && !config.extractAudio))
+                    if (currentPlayData.audio.length == 1 || (currentPlayData.audio.length != 0 && !config.extractAudio)) {
                         currentPlayData.audio[0].path = _input;
+                        useWebAudio = true;
+                        audio = webAudio;
+                    }
                     for (var i = 0; i < currentPlayData.audio.length; i++)
                         initExtractionRuningProcessesCount--;
                 }
@@ -526,9 +515,11 @@ function updateNavigator() {
 
 function updateUi() {
     basic.setTheme(config.theme, config, false);
-    fileTitle.value = path.parse(currentPath).base;
-    windowTitle.innerHTML = "AVP [" + path.parse(currentPath).base + ']';
-    filePathInput.value = currentPath;
+    if (currentPath != undefined) {
+        fileTitle.value = path.parse(currentPath).base;
+        windowTitle.innerHTML = "AVP [" + path.parse(currentPath).base + ']';
+        filePathInput.value = currentPath;
+    }
     if (config.showPreview) {
         previewImage.display = "block";
     }
@@ -545,7 +536,7 @@ function updateAll(){
 }
 
 
-function setNewTime(input) {
+function setNewTime(input, _syncAudio = true) {
     let settingTime;
     if(typeof input === 'undefined') {
       var leftPos = timerBarMiddle.getBoundingClientRect().left + window.scrollX;
@@ -556,7 +547,8 @@ function setNewTime(input) {
     }
     video.currentTime = settingTime;
     currentTime = settingTime;
-    syncAudio();
+    if (_syncAudio)
+        syncAudio();
 }
   
   function updateTimerUi(input){
@@ -581,6 +573,11 @@ function updateTimeStamp(event) {
     }
 }
 
+function currentAudio() {
+    if (!useWebAudio)
+        return audio.seek();
+    return audio.currentTime;
+}
 
 var tickInterval = setInterval(tick, tickRate);
 function tick() {
@@ -611,12 +608,12 @@ function tick() {
     }
 
     audioCheck -= tickRate;
-    if(autoSync && audio != null)
-    if ((audioCheck <= 0) && (video.currentTime - audio.seek() + (config.audioDelayAmount/1000) >= syncAmount)) {
+    if(hasSound && autoSync && audio != null)
+    if ((audioCheck <= 0) && (video.currentTime - currentAudio() + (config.audioDelayAmount/1000) >= syncAmount)) {
         syncAudio();
         audioCheck = 2000;
     }
-    if (checkIfVideoIsPlaying) {
+    if (checkIfVideoIsPlaying && currentPath != undefined) {
         checkIfVideoIsPlayingTime -= tickRate;
         if (checkIfVideoIsPlayingTime <= 0) {
             basic.addNotification("Err: video:<br/> <u>[" + currentPath + "]</u><br/>is not valid, <small>playing next in the directory.</small>", 5000, false, "videoIsNotValid", "red");
@@ -626,47 +623,30 @@ function tick() {
 }
 
 function removeFilesFromDirectory(input) {
-    fs.readdir(localPath + "/" + input, (err, files) => {
-        for (const file of files) {
-                fs.unlink(path.join(localPath + "/" + input, file), () => {});
+    fs.readdir(localPath + "/" + input, { withFileTypes: true },
+        (err, files) => {
+        if (!err && files != undefined) {
+            files.forEach(file => {
+                fs.unlink(path.join(localPath + "/" + input, file.name), () => {});
+            });
         }
-      });
+      })
 }
 
-var GetFileBlobUsingURL = function (url, convertBlob) {
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", url);
-    xhr.responseType = "blob";
-    xhr.addEventListener('load', function() {
-        convertBlob(xhr.response);
-    });
-    xhr.send();
-};
-
-var blobToFile = function (blob, name) {
-    blob.lastModifiedDate = new Date();
-    blob.name = name;
-    return blob;
-};
-
-var GetFileObjectFromURL = function(filePathOrUrl, convertBlob) {
-   GetFileBlobUsingURL(filePathOrUrl, function (blob) {
-      convertBlob(blobToFile(blob, path.parse(filePathOrUrl).base));
-   });
-};
-
+function setNewTimeNoSoundSync() {
+    setNewTime(undefined, false);
+}
 var updateBarMouseUpInterval;
 function updateBar() {
         window.addEventListener("mouseup", setNewTimeEnd);
-        updateBarMouseUpInterval = setInterval(setNewTime, 25); 
+        updateBarMouseUpInterval = setInterval(setNewTimeNoSoundSync, 25); 
 }
 
 function setNewTimeEnd(){
     clearInterval(updateBarMouseUpInterval);
+    setNewTime(undefined);
     window.removeEventListener("mouseup", setNewTimeEnd);
 }
-
-
 
 /* ***** [Functions] ***** */
 /* Video Control Functions */
@@ -675,85 +655,98 @@ ipcRenderer.on("main_generatedPreviewResult", (event, array) => {
     previewArray = array;
 });
 
+ipcRenderer.on("settingResult", (event, _config) => {
+    if (_config != null) {
+        config = _config;
+        updateAll();
+    }
+});
+
 function getPreviewByPercent(input) {
     if (previewArray.length != 0)
         return previewArray[Math.min(Math.round(previewArray.length/100*input), previewArray.length-1)];
     return "Styles/images/loadingPreview.jpg";
 }
 
-function loadVideo(input, reset_current = false) {
-    if(video.readyState === 4) 
-        addCurrentToHistory(!reset_current);
-    playing = 3;
-    if (audio != null) {
-        audio.stop();
-        audio.unload();
-    }
-    currentPath = input;
-    currentDirectory = path.parse(currentPath).dir;
-    refreshDirectory();
-    video.src = input;
-
-    checkIfVideoIsPlaying = true;
-    checkIfVideoIsPlayingTime = 2000;
-
-    video.onloadeddata = function() {
-
-        checkIfVideoIsPlaying = false;
-
-        if (config.showPreview) {
-            previewArray = [];
-            ipcRenderer.invoke("generatePreview", input, video.duration / config.previewStep);
-        } else {
-            previewImage.style.display = "none";
+function loadVideo(input = "none", reset_current = false) {
+    if (fs.existsSync(input)) {
+        video.srcObject = null;
+        if(video.readyState === 4) 
+            addCurrentToHistory(!reset_current);
+        playing = 3;
+        if (audio != null) {
+            if (!useWebAudio) {
+                audio.stop();
+                audio.unload();
+            } 
         }
+        currentPath = input;
+        currentDirectory = path.parse(currentPath).dir;
+        refreshDirectory();
+        video.pause();
+        video.src = input;
+
+        checkIfVideoIsPlaying = true;
+        checkIfVideoIsPlayingTime = 2000;
+
+        video.onloadeddata = function() {
+
+            checkIfVideoIsPlaying = false;
+
+            if (config.showPreview) {
+                previewArray = [];
+                ipcRenderer.invoke("generatePreview", input, video.duration / config.previewStep);
+            } else {
+                previewImage.style.display = "none";
+            }
 
 
-        if (mediaLoadUpInterval != null)
-            clearInterval(mediaLoadUpInterval);
+            if (mediaLoadUpInterval != null)
+                clearInterval(mediaLoadUpInterval);
 
-        loadMetadata(input);
+            loadMetadata(input);
 
-        mediaLoadUpInterval = setInterval(function() {
-            if (initExtractionRuningProcessesCount == 0) {
-                if (hasSound && currentPlayData.audio != null && currentPlayData.audio.length > 0) {
-                    if(fs.existsSync(currentPlayData.audio[0].path)) {
+            mediaLoadUpInterval = setInterval(function() {
+                if (initExtractionRuningProcessesCount == 0) {
+                    if (hasSound && currentPlayData.audio != null && currentPlayData.audio.length > 0) {
+                        if(fs.existsSync(currentPlayData.audio[0].path)) {
+                            playing = 0;
+                            loadAudio(currentPlayData.audio[0]);
+                            if (config.autoPlay)
+                                forcePlay();
+                            clearInterval(mediaLoadUpInterval);
+                            mediaLoadUpInterval = null;
+                    }}
+                    else if (!hasSound) {
                         playing = 0;
-                        loadAudio(currentPlayData.audio[0]);
+                        basic.addNotification("🔇 current media has no audio tracks", 3000);
+                        loadAudio(null);
                         if (config.autoPlay)
                             forcePlay();
                         clearInterval(mediaLoadUpInterval);
                         mediaLoadUpInterval = null;
-                }}
-                else if (!hasSound) {
-                    playing = 0;
-                    basic.addNotification("🔇 current media has no audio tracks", 3000);
-                    loadAudio(null);
-                    if (config.autoPlay)
-                        forcePlay();
-                    clearInterval(mediaLoadUpInterval);
-                    mediaLoadUpInterval = null;
+                    }
+                    
                 }
-                
+            }, 50);
+
+            if (config.open_as_left) {
+
+                const _time_ = getFromHistory(input);
+                // if (_time_ >= (video.duration - 0.25))
+                    setNewTime(_time_);
             }
-        }, 50);
 
-        if (config.open_as_left) {
+            basic.addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, undefined, function(){
+                basic.removeNotificationById("notif_videoTitle");
+            });
+            
+            const _newHeight = topBar.getBoundingClientRect().height + bottomBar.getBoundingClientRect().height + basic.range(video.videoHeight, 0, window.screen.height-40);
+            ipcRenderer.invoke("setWindowSize", basic.range(video.videoWidth, 0, window.screen.width-80), _newHeight);
 
-            const _time_ = getFromHistory(input);
-            // if (_time_ >= (video.duration - 0.25))
-                setNewTime(_time_);
+
+            updateAll();
         }
-
-        basic.addNotification(path.parse(currentPath).base, 8000, true, "videoTitle", undefined, undefined, function(){
-            basic.removeNotificationById("notif_videoTitle");
-        });
-        
-        const _newHeight = topBar.getBoundingClientRect().height + bottomBar.getBoundingClientRect().height + basic.range(video.videoHeight, 0, window.screen.height-40);
-        ipcRenderer.invoke("setWindowSize", basic.range(video.videoWidth, 0, window.screen.width-80), _newHeight);
-
-
-        updateAll();
     }
 }
 
@@ -815,9 +808,14 @@ function forcePlay() {
 
         video.play();
         if (hasSound && audio != null) {
-            audio.pause();
-            syncAudio();
-            audio.play();
+            if (!useWebAudio) {
+                audio.pause();
+                syncAudio();
+                audio.play();
+            } else {
+                audio.play();
+                syncAudio();
+            }
         }
         basic.addNotification("⏯️ Playing", 1000, true, "playState", "var(--alt-color-green)",  `onclick="removeNotificationById(this.id)"`);
     
@@ -864,7 +862,7 @@ function playFiles(input) {
 }
 
 function setTimeFromInput() {
-    setNewTime(convertToSeconds(timeInput.value));
+    setNewTime(basic.convertToSeconds(timeInput.value));
     timeInput.blur();
 }
 
@@ -895,19 +893,24 @@ function playPrevious() {
 function loadAudio(input) {
     if (audio != null) {
         audio.pause();
-        audio.unload();
+        if (!useWebAudio)
+            audio.unload();
     }
     if (input != null)
     if (fs.existsSync(input.path)) {
-        console.log(input.path);
-        audio = new Howl({
-            src: input.path,
-            html5: true     
-        });
-        audio.load();
-        if (!video.paused) {
+        if (!useWebAudio) {
+            audio = new Howl({
+                src: input.path,
+                html5: true     
+            });
+            audio.load();
+            if (!video.paused) {
+                syncAudio();
+                audio.play();
+            }} 
+        else {
+            audio.src = input.path;
             syncAudio();
-            audio.play();
         }
     }
 }
@@ -915,7 +918,10 @@ function loadAudio(input) {
 function syncAudio() {
     if (audio != null) {
         const _pos = video.currentTime + (config.audioDelayAmount/1000);
-        audio.seek(_pos);
+        if (!useWebAudio)
+            audio.seek(_pos);
+        else
+            audio.currentTime = _pos;
     }
 }
 
@@ -929,15 +935,20 @@ function updateVolumeUi(){
 }
 
 function setVolume(input) {
-    volumeNumberInput.blur();
+    if (volumeNumberInput != null)
+        volumeNumberInput.blur();
     var _input = Math.round(input);
     if (input > 100)
         _input = 100;
     else if (input < 0) 
         _input = 0;
     config.volume = _input;
-    if (audio != null)
-        audio.volume = config.volume/100;
+    if (audio != null) {
+        if(!useWebAudio)
+            audio.volume (config.volume/100);
+        else
+            audio.volume = config.volume/100
+    }
 
     if (_input != 0)
         basic.addNotification("🔈" + Math.round(_input) + "%", 1000, true, "volumechange");
@@ -1348,11 +1359,14 @@ function updateRecentItems() {
 var audioTracksMenuList;
 function updateAudioTrackItems() {
     var audioTracksItems = [];
+    if (currentPlayData.audio != null)
     for (var i = 0; i < currentPlayData.audio.length; i++) {
         const _item = currentPlayData.audio[i];
         audioTracksItems[i] = new menu.listItem("item", false, '[' + currentPlayData.audio[i].language + "] " + currentPlayData.audio[i].title, "--tag:'" + (i+1) + "'", "click", () => {
             loadAudio(_item);
         }, undefined, "audio_"+i);
+    } else {
+        audioTracksItems[0] = new menu.listItem("item", false, "none", "--tag:'-'", "", undefined, "noAudio");
     }
     audioTracksMenuList = new menu.listItem("item", false, "tracks", "--tag:'🎵'", "", undefined, audioTracksItems, "mainMenuAudioTracks");
 }

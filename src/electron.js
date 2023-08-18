@@ -40,7 +40,7 @@ const configDefaultContent = `
   "audioDelayAddingAmount":50,
   "autoSync":true,
   "showPreview":true,
-  "previewStep":0.05,
+  "previewStep":60,
   "extractAudio":false,
   "singleAudioExport":false},
   {
@@ -98,6 +98,7 @@ if (require('electron-squirrel-startup')) {
 
 var win;
 var background_process_win;
+var settings_win;
 
 app.on('ready', () => { 
   const _path = app.getPath('userData');
@@ -153,7 +154,7 @@ app.on('ready', () => {
         preload: path.join(__dirname, 'preload.js'),
         contextIsolation: false
         }  
-    })
+    });
 
       background_process_win = new BrowserWindow({
       width: 320,
@@ -166,8 +167,22 @@ app.on('ready', () => {
         nodeIntegration: true,
         contextIsolation: false
         }  
-    })
+    });
 
+    settings_win = new BrowserWindow({
+      width: 640,
+      height: 480,
+      nodeIntegration: true,
+      transparent:false,
+      show: false,
+      frame: false,
+      alwaysOnTop: true,
+      webPreferences: {
+        enableRemoteModule: true,
+        nodeIntegration: true,
+        contextIsolation: false
+        }  
+    });
 
     ipcMain.on("toggleMaximize", function(event) {
       if(win.isMaximized()) {
@@ -221,10 +236,25 @@ app.on('ready', () => {
     ipcMain.handle("generatedPreviewResult", async(event, array) => {
       win.send("main_generatedPreviewResult", array);
   });
-  
+
+  ipcMain.handle('openSettings', async(event, config) => {
+    settings_win.show();
+    settings_win.send('reciveData', config);
+  });
+
+  ipcMain.handle('closeSettings', (event, config) => {
+    settings_win.hide();
+    settings_win.send('settingsResult', config);
+  });
+
+    settings_win.loadFile(path.join(__dirname, 'settings.html'));
+    settings_win.webContents.openDevTools();
+    settings_win.setMenu(null);
+
+
     background_process_win.loadFile(path.join(__dirname, 'background_process.html'));
-    //background_process_win.webContents.openDevTools();
-    //background_process_win.show();
+    // background_process_win.webContents.openDevTools();
+    // background_process_win.show();
 
 
     win.webContents.openDevTools();
