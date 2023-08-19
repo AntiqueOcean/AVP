@@ -237,14 +237,14 @@ app.on('ready', () => {
       win.send("main_generatedPreviewResult", array);
   });
 
-  ipcMain.handle('openSettings', async(event, config) => {
+  ipcMain.handle('openSettings', async(event, config, key) => {
     settings_win.show();
-    settings_win.send('reciveData', config);
+    settings_win.send('reciveData', config, key);
   });
 
-  ipcMain.handle('closeSettings', (event, config) => {
+  ipcMain.handle('closeSettings', async(event, config, key) => {
     settings_win.hide();
-    settings_win.send('settingsResult', config);
+    win.send('settingResult', config, key);
   });
 
     settings_win.loadFile(path.join(__dirname, 'settings.html'));

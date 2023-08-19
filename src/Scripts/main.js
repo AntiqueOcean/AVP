@@ -31,9 +31,9 @@ const appPath = ipcRenderer.sendSync("getAppPath");
 const localPath = ipcRenderer.sendSync("getLocalPath");
 
 const _config = JSON.parse(fs.readFileSync(localPath + "/config.json"));
-export const config = _config[0];
+export var config = _config[0];
 const history = JSON.parse(fs.readFileSync(localPath + "/history.json"));
-const key = JSON.parse(fs.readFileSync(localPath + "/input.json"))[0];
+var key = JSON.parse(fs.readFileSync(localPath + "/input.json"))[0];
 
 
 
@@ -208,6 +208,7 @@ function safeClose() {
         config.last_path = currentPath;
     addCurrentToHistory();
     updateHistoryFile();
+    updateInputFile();
     basic.updateConfigFile(config);
     if (previewGenerationProcess != null)
         previewGenerationProcess.kill();
@@ -224,7 +225,7 @@ function toggleFullscreen(e){
 }
 
 function openSettings() {
-    ipcRenderer.invoke('openSettings', config);
+    ipcRenderer.invoke('openSettings', config, key);
 }
 
 function loadVideoFromInput() {
@@ -462,6 +463,26 @@ function toCharCode(input) {
     return result2;
 }
 
+function updateInputFile() {
+    var _str = "[" + JSON.stringify(key) + "]";
+    for (var i = 0; i < _str.length; i++) {
+        if (_str[i] == ',' || _str[i] == '{') {
+            _str = _str.slice(0, i+1) + "\n" + _str.slice(i+1);
+            i++;
+        } else if (_str[i] == '}') {
+            _str = _str.slice(0, i) + "\n" + _str.slice(i);
+            i++;
+        }
+    }
+
+    fs.writeFile(localPath + "/input.json", _str, (error) => {
+        if(error) {
+            //console.error(error);
+            throw error;
+        }
+    });
+}
+
 function updateHistoryFile() {
     var _str = JSON.stringify(history);
     for (var i = 0; i < _str.length; i++) {
@@ -655,11 +676,12 @@ ipcRenderer.on("main_generatedPreviewResult", (event, array) => {
     previewArray = array;
 });
 
-ipcRenderer.on("settingResult", (event, _config) => {
-    if (_config != null) {
+ipcRenderer.on("settingResult", (event, _config, _key) => {
+    if (_config != null)
         config = _config;
-        updateAll();
-    }
+    if (_key != null)
+        key = _key;
+    updateAll();
 });
 
 function getPreviewByPercent(input) {

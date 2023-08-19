@@ -12,12 +12,17 @@ const { dialog, electron, ipcRenderer } = require('electron');
 import * as basic from './basics.js';
 import * as listen from './listener.js';
 var config = null;
-
+var key = null;
+var isSettingKey = false;
+var settingKeyListener = null;
+var settingKey;
 const content = document.getElementById("content");
 
-ipcRenderer.on("reciveData", (event, _config) => {
+ipcRenderer.on("reciveData", (event, _config, _key) => {
     config = _config;
+    key = _key;
     init();
+
 });
 
 
@@ -27,15 +32,12 @@ const localPath = ipcRenderer.sendSync("getLocalPath");
 const path = require('path');
 const fs = require('fs');
 
-const key = JSON.parse(fs.readFileSync(localPath + "/input.json"))[0];
-
-
 function init(){
     basic.setTheme(config.theme, config, false);
 }
 
 
-export class item {
+class item {
     constructor(_content, IDs = [], triggers = [], functions = [], passing = []) {
         this.content = _content;
         this.IDs = IDs;
@@ -45,26 +47,52 @@ export class item {
     }
 };
 
+class keyData {
+    constructor(id, name, index) {
+        this.id = id;
+        this.name = name;
+        this.index = index;
+    }
+};
 
-var testItem1 = new item(`
-<span>text here</span>
-<div class="spacer"></div>
-<button id="testButton1">Click 1</button>
-`, ["testButton1"], ["click"], [function(e){
-    alert("1: " + e.target);
-}], [["!event"]]);
+var keyItems = [];
 
-var testItem2 = new item(`
-<span>text here</span>
+function generateKeyItems() {
+    keyItems = [];
+    for (var i = 0; i < Object.keys(key).length; i++) {
+        const _index = i;
+        keyItems[_index] = new item(`
+        <h2>${Object.keys(key)[_index]}</h2>
+        <hr/>` + makeElementsForKeyInput(key[[Object.keys(key)[_index]]], Object.keys(key)[_index]) +
+        `<div class="spacer"></div>
+        <button id="addkey_${Object.keys(key)[_index]}">Add</button>
+        `);
+    }
+}
 
-<button id="testButton2">Click 2</button>
-`, ["testButton2"], ["click"], [function(e){
-    alert("2: " + e.target);
-}], [["!event"]]);
+function generateInputMenu() {
+    // input_playpause = new item(`
+    // <h2>Play/Pause</h2>
+    // <hr/>` + makeElementsForKeyInput(key.play, "play") +
+    // `<div class="spacer"></div>
+    // <button id="addkey_play">Add</button>
+    // `, ["playKey_add"], ["click"], [function(e){
+    //     alert("1: " + e.target);
+    // }], [["!event"]]);
 
-var testItemList = [testItem1, testItem2];
+    // var testItemList = [input_playpause];
+    generateKeyItems();
+    return generateItemList(keyItems);
+}
 
-
+window.addEventListener("click", function(e){
+    if (e.target.id.includes("addkey_")) {
+        const _name = e.target.id.replace("addkey_", "");
+        addKey(_name);
+        const _content = generateInputMenu();
+        content.innerHTML = _content;
+    }
+})
 
 function generateItemList(items = []) {
     var _content = `<div class="item-list">`;
@@ -84,7 +112,7 @@ function generateItemList(items = []) {
 }
 
 listen.addListener("apply", "click", function(){
-    ipcRenderer.invoke("closeSettings", config);
+    ipcRenderer.invoke("closeSettings", config, key);
 });
 
 listen.addListener("close", "click", function(){
@@ -92,39 +120,63 @@ listen.addListener("close", "click", function(){
 });
 
 listen.addListener("inputButton", "click", function(){
-    const _content = generateItemList(testItemList);
+
+    const _content = generateInputMenu();
     content.innerHTML = _content;
 });
 
-function getKeysForActions() {
-    for (var i = 0; i < _keys.length; i++) {
+function makeElementsForKeyInput(input, name) {
+    var _content = "";
+    for (var i = 0; i < input.length; i++) {
+        const _id = "key_" + name + "_" + i;
+        const del_id = "delkey_" + name + "_" + i
+        _content += `<div id="${_id}" class="key">${input[i]}
+        <button id="${del_id}">del</button>
+        </div>` 
+        const _index = i;
+        basic.elementValidateById(_id, function(){
+            listen.addListener(_id, "click", function(){
+                editKey(_id, name, _index);
+            })
+        }, 25);
+        basic.elementValidateById(del_id, function(){
+            listen.addListener(del_id, "click", function(e){
+                e.stopPropagation();
+                deleteKey(_id, name, _index);
+            }, ["!event"])
+        }, 25);
+    }
+    return _content;
+}
 
-        var _key = key.play;
+function addKey(name, input="none") {
+    key[name].push(input);
+}
 
-        for (var p = 0; p < _key.length; p++) {
-            var _code = `<div class="key-select">` + _key[p] +`</div>`
-            _keys[i].parentElement.insertAdjacentHTML('afterbegin', _code);
+window.onkeydown = function(e) {
+    const code = e.code;
+    if (isSettingKey) {
+        if(code != "Backspace") {
+            key[settingKey.name][settingKey.index] = code;
+            const _content = generateInputMenu();
+            content.innerHTML = _content;
+            isSettingKey = false;
+        } else {
+            const _content = generateInputMenu();
+            content.innerHTML = _content;
+            isSettingKey = false;
         }
-        _keys[i].remove;
     }
 }
 
-
-
-function setSettingsContent(input) {
-    const settingsContent = document.getElementById("settingsContent");
-    const settingsTitlebar = document.getElementById("settingsTitlebar");
-    const settingsContentParent = settingsContent.parentElement;
-
-    setTimeout(() => {
-        const _height = settingsContentParent.getBoundingClientRect().height - 16 + 'px';
-        settingsContent.style.setProperty("--content-parent-height", _height);
-
-        if (input === "input") {
-            settingsContent.innerHTML = settings_input;
-            settingsTitlebar.innerHTML = "Settings [Input]";
-            getKeysForActions();
-        }
-    }, 50);
-    
+function editKey(_id, _name, _index) {
+    settingKey = new keyData(_id, _name, _index);
+    document.getElementById(_id).innerHTML = document.getElementById(_id).innerHTML.replace(key[_name][_index], "Press_Key")
+    isSettingKey = true;
 }
+
+function deleteKey(_id, name, _index) {
+    key[name].splice(_index, 1);
+    document.getElementById(_id).remove();
+}
+

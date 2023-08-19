@@ -48,9 +48,13 @@
     --notification-text-color: #e6e6e6;
 
     --item-background-color: #3a3a3a;
-    --item-upper-background-differ-color: #1f1f1f;
-    --item-upper-text-color: #DFDFDF;
-    --item-upper-text-differ-color: #A8A8A8;
+    --item-background-color-hover: #494949;
+    --item-background-differ-color: #1f1f1f;
+    --item-background-differ-color-hover: #202020;
+    --item-text-color: #DFDFDF;
+    --item-text-color-hover: #eeeeee;
+    --item-text-differ-color: #b9b9b9;
+    --item-text-differ-color-hover: #d4d4d4;
     
 
 
