@@ -7,7 +7,7 @@
  <html class="theme-dark font-size-medium base-theme-essential">
 <head>
     <meta charset="UTF-8" />
-    <title>Settings</title>
+    <title id="title">Settings</title>
     <link rel="stylesheet" href="index.css">
     <script src="Scripts/prefixfree.min.js" ></script>
     <script src="Scripts/settings.js" type="module" defer></script>
@@ -18,13 +18,14 @@
         <div class="window">
             <div class="upper">
                 <div class="left">
-                    <button id="appearanceButton">Appearance</button>
+                    <button id="inputButton">Input</button>
+                    <button id="proxyButton">Proxy</button>
+                    <!--button id="appearanceButton">Appearance</button>
                     <button id="videoButton">Video</button>
                     <button id="audioButton">Audio</button>
                     <button id="subtitleButton">Subtitle</button>
-                    <button id="inputButton">Input</button>
-                    <button id="cacheButton">Cache</button>
-                    <button id="proxyButton">Proxy</button>
+                    <button id="cacheButton">Cache</button-->
+                    
                     <hr style="width: 100%; border-color: var(--toolbar-background-color); margin: 0; margin-top: auto;"/>
                     <button onclick="alert('info');">about</button>
                 </div>
@@ -35,7 +36,7 @@
                 </div>
             </div>
             <div class="lower">
-                <button onclick="location.reload(true);">refresh</button>
+                <!-- button onclick="location.reload(true);">refresh</button -->
                 <button id="close">close</button>
                 <button id="apply">apply</button>
             </div>

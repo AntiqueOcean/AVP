@@ -211,7 +211,6 @@ export function shorten(input, length, sign = "...", cutEnd = true) {
 
 
 export function isOfType(input) {
-    
     for (var i = 0; i < supportedExtensions.length; i++)
         if (input == supportedExtensions[i])
             return true;
@@ -221,6 +220,18 @@ export function isOfType(input) {
 // **********************************************
 // play data
 // **********************************************
+
+export class convertData {
+    constructor(source, targetCodec, targetExtension, targetRate, width, height, targetPath) {
+        this.source = source;
+        this.targetCodec = targetCodec;
+        this.targetExtension = targetExtension;
+        this.targetRate = targetRate;
+        this.width = width;
+        this.height = height;
+        this.targetPath = targetPath;
+    }
+};
 
 export class videoData {
     constructor(index, width, height, bitrate, fps, codec) {

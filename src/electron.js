@@ -42,7 +42,9 @@ const configDefaultContent = `
   "showPreview":true,
   "previewStep":60,
   "extractAudio":false,
-  "singleAudioExport":false},
+  "singleAudioExport":false,
+  "convertHevc":true,
+  "hevcConversionrate":10},
   {
   }]
 `;
@@ -102,12 +104,13 @@ var settings_win;
 
 app.on('ready', () => { 
   const _path = app.getPath('userData');
-  if (!fs.existsSync(_path)) {
-    fs.mkdir(_path, function(err) {
+
+  if (!fs.existsSync(_path + "/audiotracks")) {
+    fs.mkdir(_path + "/audiotracks", function(err) {
     });
   }
-  if (!fs.existsSync(_path + "/preview")) {
-    fs.mkdir(_path + "/preview", function(err) {
+  if (!fs.existsSync(_path + "/video")) {
+    fs.mkdir(_path + "/video", function(err) {
     });
   }
   if (!fs.existsSync(_path + "/subtitles")) {
@@ -248,7 +251,7 @@ app.on('ready', () => {
   });
 
     settings_win.loadFile(path.join(__dirname, 'settings.html'));
-    settings_win.webContents.openDevTools();
+    // settings_win.webContents.openDevTools();
     settings_win.setMenu(null);
 
 
@@ -257,7 +260,7 @@ app.on('ready', () => {
     // background_process_win.show();
 
 
-    win.webContents.openDevTools();
+    // win.webContents.openDevTools();
     win.setMenu(null);
     win.loadFile(path.join(__dirname, 'index.html'));
     // if (hasProxy) {

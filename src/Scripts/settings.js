@@ -71,16 +71,6 @@ function generateKeyItems() {
 }
 
 function generateInputMenu() {
-    // input_playpause = new item(`
-    // <h2>Play/Pause</h2>
-    // <hr/>` + makeElementsForKeyInput(key.play, "play") +
-    // `<div class="spacer"></div>
-    // <button id="addkey_play">Add</button>
-    // `, ["playKey_add"], ["click"], [function(e){
-    //     alert("1: " + e.target);
-    // }], [["!event"]]);
-
-    // var testItemList = [input_playpause];
     generateKeyItems();
     return generateItemList(keyItems);
 }
@@ -120,7 +110,13 @@ listen.addListener("close", "click", function(){
 });
 
 listen.addListener("inputButton", "click", function(){
+    setTitle("input");
+    const _content = generateInputMenu();
+    content.innerHTML = _content;
+});
 
+listen.addListener("proxyButton", "click", function(){
+    setTitle("proxy");
     const _content = generateInputMenu();
     content.innerHTML = _content;
 });
@@ -180,3 +176,13 @@ function deleteKey(_id, name, _index) {
     document.getElementById(_id).remove();
 }
 
+function setTitle(input = undefined) {
+    if (input != "" && input != undefined) {
+        document.getElementById("title").innerHTML = "Settings | " + input;
+        document.getElementById("settingsTitlebar").innerHTML = "Settings | " + input;
+    }
+    else {
+        document.getElementById("title").innerHTML = "Settings";
+        document.getElementById("settingsTitlebar").innerHTML = "Settings";
+    }
+}

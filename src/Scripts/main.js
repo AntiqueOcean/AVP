@@ -12,6 +12,7 @@
 import * as basic from './basics.js';
 import * as listen from './listener.js';
 import * as menu from './menus.js';
+// import * as l265 from './libde265.js';
 
 
 const { app, BrowserWindow, electron, contextBridge,
@@ -20,6 +21,8 @@ const { app, BrowserWindow, electron, contextBridge,
 const path = require('path');
 const fs = require('fs');
 const { Howl } = require ('howler');
+// const h265 = require('h265web.js');
+
 // const { soundjs } = require ('soundjs')
 
 /* ------------- ----------- ------------- */
@@ -70,7 +73,9 @@ var fileList = [];
 var replay = config.replay;
 var checkIfVideoIsPlaying = true;
 var checkIfVideoIsPlayingTime = 0;
-
+var playerConversionProcess = null;
+var mainConversionProcess = null;
+var videoConvertList = [];
 
 //Audio control variables
 var audio = null;
@@ -134,6 +139,17 @@ var mainWin = document.getElementById("mainWin");
 const topBar = document.getElementById("topBar");
 const bottomBar = document.getElementById("bottomBar");
 const barFileSelectInput = document.getElementById("fileSelectInput");
+
+// var video2 = document.getElementById("video2");
+// var player = null;
+// var playback = function(event) {
+//     event.preventDefault();
+//     if (player) {
+//         player.stop();
+//     }
+// }
+// player = new l265.libde265.RawPlayer(video2);
+// player.playback("/mnt/C2D49BC8D49BBCDB/Archive/Series/Succession/Succession_S01E02_10bit_x265_720p_BluRay_30nama_30NAMA.mkv");
 
 /* ------------- ------------------- ------------- */
 /* ------------- [context menu data] ------------- */
@@ -212,6 +228,8 @@ function safeClose() {
     basic.updateConfigFile(config);
     if (previewGenerationProcess != null)
         previewGenerationProcess.kill();
+    if (playerConversionProcess != null)
+        playerConversionProcess.kill();
     setTimeout (() => {
         ipcRenderer.send("quitWindow");
     }, 250);
@@ -283,10 +301,20 @@ function loadMetadata(_input) {
                 currentPlayData.video = [];
                 currentPlayData.audio = [];
                 currentPlayData.subtitle = [];
-                
+                videoConvertList = [];
+
+
                 for (var i = 0; i < metadata.streams.length; i++) {
                     if (metadata.streams[i].codec_type == "video") {
                         currentPlayData.video.push(new basic.videoData(metadata.streams[i].index, metadata.streams[i].width, metadata.streams[i].height, metadata.streams[i].bitrate, metadata.streams[i].r_frame_rate, metadata.streams[i].codec_name));
+                        if(metadata.streams[i].codec_name == "hevc") {
+                            basic.addNotification("⚠️ Hevc (x265) is not supported by this player yet", 8000);
+                            if(config.convertHevc) {
+                                videoConvertList.push(
+                                new basic.convertData(_input, "h264", "mp4" /*path.extname(_input).slice(1)*/, config.hevcConversionrate, metadata.streams[i].width, metadata.streams[i].height, localPath + "/video/" + path.parse(_input).name)
+                                );
+                            }
+                        }
                     }
                     else if (metadata.streams[i].codec_type == "audio") {
                         currentPlayData.audio.push(new basic.audioData(metadata.streams[i].index, metadata.streams[i].codec_name, metadata.streams[i].bit_rate, metadata.streams[i].tags.title, metadata.streams[i].tags.language, false));
@@ -302,7 +330,7 @@ function loadMetadata(_input) {
                     hasSound = false;
 
                 //start of audio and subtitle extraction
-                initExtractionRuningProcessesCount = currentPlayData.audio.length + currentPlayData.subtitle.length ;
+                initExtractionRuningProcessesCount = currentPlayData.audio.length + currentPlayData.subtitle.length + videoConvertList.length;
 
                 if (audioExtractProcess != null)
                     audioExtractProcess.kill();
@@ -353,6 +381,17 @@ function loadMetadata(_input) {
                 }
     
                 // end of audio and subtitle extraction
+
+                //start of video conversion
+                for (var i = 0; i < videoConvertList.length; i++) {
+                    convert(videoConvertList[i], function(percent){
+                    console.log(percent);   
+                    }, function(){
+                        initExtractionRuningProcessesCount--;
+                    })
+                }
+                //end of video conversion
+
                 initExportRanOnce = true;
                 clearInterval(_validateStreamsInterval);
                 _validateStreamsInterval = null;
@@ -593,6 +632,45 @@ function updateTimeStamp(event) {
         previewImage.setAttribute('src', getPreviewByPercent(_percent_));
     }
 }
+
+function convert(convertData, _function_progress = null, _function_end = null) {
+    let _duration = 0;
+
+    playerConversionProcess = basic.ffmpeg(convertData.source).saveToFile(convertData.targetPath + '.' + convertData.targetExtension)
+    .outputOption("-c", "copy")
+    .outputOption("-vcodec", "libx264")
+    .outputOption("-qscale:v", `${31/10*convertData.targetRate}`)
+    .on('codecData', data => {
+        _duration = parseInt(data.duration.replace(/:/g, '')) 
+     })
+    .on("progress", progress => {
+        const _time = parseInt(progress.timemark.replace(/:/g, ''))
+        const _percent = (_time / _duration) * 100;
+        if (_function_progress != null)
+        _function_progress(_percent);
+    }).on("end", function() {
+        if (_function_end != null)
+        _function_end();
+    })
+}
+
+// function convert(convertData, _function_progress = null, _function_end = null) {
+//     let _duration = 0;outputOption("-c", "copy"
+//     console.log(31/10*convertData.targetRate);
+//     playerConversionProcess = basic.ffmpeg(convertData.source).outputOption("-qscale:v", `${31/10*convertData.targetRate}`).withSize(`${convertData.width}x${convertData.height}`).saveToFile(convertData.targetPath + '.' + convertData.targetExtension)
+//     .on('codecData', data => {
+//         _duration = parseInt(data.duration.replace(/:/g, '')) 
+//      })
+//     .on("progress", progress => {
+//         const _time = parseInt(progress.timemark.replace(/:/g, ''))
+//         const _percent = (_time / _duration) * 100;
+//         if (_function_progress != null)
+//         _function_progress(_percent);
+//     }).on("end", function() {
+//         if (_function_end != null)
+//         _function_end();
+//     })
+// }
 
 function currentAudio() {
     if (!useWebAudio)

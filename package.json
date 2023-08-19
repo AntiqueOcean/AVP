@@ -1,7 +1,7 @@
 {
   "name": "avp",
   "productName": "AVP",
-  "version": "0.1.1-alpha",
+  "version": "0.1.2-alpha",
   "description": "antique Video Player",
   "main": "src/electron.js",
   "scripts": {
@@ -26,6 +26,7 @@
     "ffprobe": "^1.1.2",
     "ffprobe-static": "^3.1.0",
     "fluent-ffmpeg": "^2.1.2",
+    "h265web.js": "^2.2.2",
     "howler": "^2.2.3",
     "jquery": "^3.7.0",
     "rpmbuild": "^0.0.23",
