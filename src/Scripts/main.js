@@ -12,8 +12,6 @@
 import * as basic from './basics.js';
 import * as listen from './listener.js';
 import * as menu from './menus.js';
-// import * as l265 from './libde265.js';
-
 
 const { app, BrowserWindow, electron, contextBridge,
     ipcMain, ipcRenderer, dialog } = require('electron');
@@ -21,9 +19,6 @@ const { app, BrowserWindow, electron, contextBridge,
 const path = require('path');
 const fs = require('fs');
 const { Howl } = require ('howler');
-// const h265 = require('h265web.js');
-
-// const { soundjs } = require ('soundjs')
 
 /* ------------- ----------- ------------- */
 /* ------------- [variables] ------------- */
@@ -284,7 +279,7 @@ function loadMetadata(_input) {
 
     basic.ffmpeg(_input).ffprobe(function(err, _metadata_) {
         metadata = _metadata_;
-        console.log(metadata);
+        // console.log(metadata);
     });
 
     clearInterval(_validateStreamsInterval);

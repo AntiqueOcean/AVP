@@ -102,6 +102,8 @@ var win;
 var background_process_win;
 var settings_win;
 
+app.commandLine.appendSwitch('lang', 'en-US');
+
 app.on('ready', () => { 
   const _path = app.getPath('userData');
 

@@ -1,7 +1,7 @@
 module.exports = {
   packagerConfig: {
     icon: '/home/mak/Documents/GitHub/AVP/src/Styles/images/icon',
-    asar: true,
+    asar: false,
     executableName: "avp"
   },
   rebuildConfig: {},
@@ -26,11 +26,6 @@ module.exports = {
       name: '@electron-forge/maker-rpm',
       config: {},
     },
-  ],
-  plugins: [
-    {
-      name: '@electron-forge/plugin-auto-unpack-natives',
-      config: {},
-    },
-  ],
+  ]
+
 };

@@ -4,6 +4,9 @@
   "version": "0.1.2-alpha",
   "description": "antique Video Player",
   "main": "src/electron.js",
+  "build": {
+    "afterPack": "./removeLocales.js"
+  },
   "scripts": {
     "start": "electron .",
     "package": "electron-forge package",
@@ -21,21 +24,18 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "@rajesh896/video-thumbnails-generator": "^2.3.9",
+    "electron-builder": "^24.6.3",
+    "electron-packager": "^17.1.2",
     "electron-squirrel-startup": "^1.0.0",
-    "ffmpeg-static": "^5.1.0",
+    "ffmpeg-static": "^5.2.0",
     "ffprobe": "^1.1.2",
     "ffprobe-static": "^3.1.0",
     "fluent-ffmpeg": "^2.1.2",
-    "h265web.js": "^2.2.2",
     "howler": "^2.2.3",
     "jquery": "^3.7.0",
     "rpmbuild": "^0.0.23",
-    "soundjs": "^1.0.1",
-    "srt-parser-2": "^1.2.3",
-    "subtitle": "^4.2.1",
     "update-electron-app": "^2.0.1",
-    "videojs-youtube": "^3.0.1",
-    "vlc-player": "^2.0.0"
+    "videojs-youtube": "^3.0.1"
   },
   "devDependencies": {
     "@electron-forge/cli": "^6.2.1",
